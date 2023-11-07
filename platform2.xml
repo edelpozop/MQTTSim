@@ -3,8 +3,8 @@
     <platform version="4.1">
         <zone id="AS0" routing="Full">
             <zone id="zone1" routing="Full">
-                <prop id="mbox_broker" value="broker-0-0" />     <!-- mbox_broker -   argv[0] -->
-                <prop id="qos" value="0" />                     <!-- qos -           argv[1] -->
+                <prop id="mbox_broker" value="broker-0-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
 
                 <cluster bw="125MBps" id="edge0" lat="50us" prefix="edge-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="edge0_gtw"/>
             </zone>
@@ -16,8 +16,9 @@
             </zone>
 
             <zone id="zone3" routing="Full">
-                <prop id="mbox_broker" value="broker-0-0" />     <!-- mbox_broker -   argv[0] -->
-                <prop id="qos" value="0" />                     <!-- qos -           argv[1] -->
+                <prop id="mbox_broker" value="broker-0-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
+                <prop id="subscribe" value="/" />
 
                 <cluster bw="125MBps" id="fog0" lat="50us" prefix="fog-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="fog0_gtw"/>
             </zone>

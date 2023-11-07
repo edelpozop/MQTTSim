@@ -1,8 +1,29 @@
 
 
-#include "mqtt_sim.h"
+//#include "mqtt_sim.h"
+#include <simgrid/actor.h>
+#include <simgrid/engine.h>
+#include <simgrid/host.h>
+#include <simgrid/mailbox.h>
+#include "simgrid/zone.h"
+#include "simgrid/comm.h"
+#include "xbt/dict.h"
+#include <xbt/sysdep.h>
+
+// Definición de la estructura de envío de paquetes
+typedef struct {
+	int op;				//0-connect, 1-disconnect, 2-publish, 3-subscribe, 5-end
+	int qos;
+	char mbox[128];
+	char topic[128];
+	char data[128];
+} MQTTPackage;
+
 
 #define TOTAL_EDGE 1
+
+
+
 
 
 /* Los edge recibiran como parametros: mbox_in, mbox_broker, qos, fname */
@@ -54,7 +75,6 @@ static void edge (int argc, char**argv)
 	}
 
 	printf("Edge Connected\n");
-
 	/*Lectura sensor*/
 
 	FILE *sensor;
@@ -143,7 +163,7 @@ static void broker (int argc, char** argv)
 	sg_mailbox_t mbox_inb = sg_mailbox_by_name(broker_name);
 	int nodes_fog = atoi(sg_zone_get_property_value(sg_zone_get_by_name("zone2"), "nodes_fog"));
 	int id_cluster_fog = atoi(sg_zone_get_property_value(sg_zone_get_by_name("zone2"), "id_cluster_fog"));
-	char ack_broker[128];
+	char ack_broker[128], destEnd[128], dest[128];
 	int active_devices = TOTAL_EDGE;
 	int end = 0;
 
@@ -171,7 +191,6 @@ static void broker (int argc, char** argv)
 
 				if(active_devices == 0)
 				{
-					char destEnd[128];
 					for (int i = 0; i < nodes_fog; i++)
 					{
 						sprintf(destEnd, "fog-%d-%d", id_cluster_fog, i);
@@ -199,9 +218,7 @@ static void broker (int argc, char** argv)
 				}
 				break;
 
-			case 2:
-				char dest[128];
-				
+			case 2:	
 				for (int i = 0; i < nodes_fog; i++)
 				{
 					sprintf(dest, "fog-0-%d", i);
@@ -232,6 +249,13 @@ static void broker (int argc, char** argv)
 
 				}
 				break;
+			case 3:
+				/*Se puede guardar en un fichero por cada mbox.fog el tema al que se suscribe*/
+				printf("%s subscribed to %s\n", package.mbox, package.topic);
+				strcpy(ack_broker,"Subscribed");
+				sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
+				break;
+
 			default:
 			}
 		} 
@@ -250,12 +274,14 @@ static void fog (int argc, char** argv)
 {
 	const char* value_broker;
 	const char* value_qos;
+	const char* topic_subs;
 	const char* fog_name 	= sg_host_get_name(sg_host_self());
 	const char* fname 		= sg_host_get_name(sg_host_self());
 	int end = 0;
 
 	value_broker 	= sg_zone_get_property_value(sg_zone_get_by_name("zone3"), "mbox_broker");
 	value_qos 		= sg_zone_get_property_value(sg_zone_get_by_name("zone3"), "qos");
+	topic_subs 		= sg_zone_get_property_value(sg_zone_get_by_name("zone3"), "subscribe");
 
 	sg_mailbox_t mbox_fog = sg_mailbox_by_name(fog_name);
 	sg_mailbox_t mbox_broker = sg_mailbox_by_name(value_broker);
@@ -294,6 +320,41 @@ static void fog (int argc, char** argv)
 		end = 1;
 	}
 	
+	/*Subscription*/
+
+	if (!end)
+	{
+		MQTTPackage* subscriptionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
+		subscriptionBroker->op 						= 3;
+		sprintf(subscriptionBroker->mbox, "%s", mbox_fog);
+		sprintf(subscriptionBroker->topic, "%s", topic_subs);
+	    sg_comm_t comm       						= sg_mailbox_put_async(mbox_broker, subscriptionBroker, 0);
+
+	    switch (sg_comm_wait_for(comm, 1.0)) 
+	    {
+		case SG_ERROR_NETWORK:
+			xbt_free(subscriptionBroker);
+			break;
+		case SG_ERROR_TIMEOUT:
+			xbt_free(subscriptionBroker);
+			break;
+		case SG_OK:
+			/* nothing */
+			break;
+		default:
+			printf("Unexpected behavior with '%s'\n", fog_name);
+	    }
+
+	    char* msgACK_sub = sg_mailbox_get(mbox_fog);
+	   
+		if (strcmp(msgACK_sub, "Subscribed") != 0)
+		{
+			printf("Error\n");
+			end = 1;
+		}
+		printf("Fog subscribed\n");
+	}
+
 	while(!end)
 	{
 		MQTTPackage* payload;
@@ -331,10 +392,6 @@ int main(int argc, char* argv[])
 	/* load the platform file */
 	simgrid_load_platform(argv[1]);
 
-	int edge_argc           = 0;
-	const char* edge_argv[] = {NULL};
-	sg_actor_create_("edge0", sg_host_by_name("edge-0-0"), edge, edge_argc, edge_argv);
-
 	int broker_argc           = 0;
 	const char* broker_argv[] = {NULL};
 	sg_actor_create_("broker0", sg_host_by_name("broker-0-0"), broker, broker_argc, broker_argv);
@@ -343,11 +400,16 @@ int main(int argc, char* argv[])
 	const char* fog_argv[] = {NULL};
 	sg_actor_create_("fog0", sg_host_by_name("fog-0-0"), fog, fog_argc, fog_argv);
 
-	simgrid_register_function("edge", edge);
-	simgrid_register_function("broker", broker);
-	simgrid_register_function("fog", fog);
+	int edge_argc           = 0;
+	const char* edge_argv[] = {NULL};
+	sg_actor_create_("edge0", sg_host_by_name("edge-0-0"), edge, edge_argc, edge_argv);
+
 	
 
+	simgrid_register_function("broker", broker);
+	simgrid_register_function("fog", fog);
+	simgrid_register_function("edge", edge);
+	
 	simgrid_run();
 	printf("Simulation time %g\n", simgrid_get_clock());
 

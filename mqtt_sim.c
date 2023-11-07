@@ -31,7 +31,7 @@ int mqtt_connect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 	if (strcmp(msgACK, "Connected") != 0)
 	{
 		printf("Error in %s\n", sg_host_get_name(sg_host_self()));
-		return -1;
+		return 1;
 	}
 
 	printf("%s connected\n", sg_host_get_name(sg_host_self()));
@@ -67,7 +67,7 @@ void mqtt_disconnect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 	if (strcmp(msgACK_disc, "Disconnected") != 0)
 	{
 		printf("Error in %s\n", sg_host_get_name(sg_host_self()));
-		return -1;
+		return 1;
 	}
 
 	printf("%s disconnected\n", sg_host_get_name(sg_host_self()));
@@ -101,7 +101,6 @@ void mqtt_disconnectAll_b(int id_cluster, int nodes_fog)
 			printf("Unexpected behavior with '%s'\n", broker_name);
 	    }
 	}
-	return 0;
 }
 
 
@@ -167,7 +166,37 @@ void mqtt_publish_b(int qos, sg_mailbox_t source, char* dest, char* topic, char*
 }
 
 
-void mqtt_subscribe()
+int mqtt_subscribe(int qos, sg_mailbox_t source, char* dest, sg_mailbox_t dest, char* topic)
 {
+	MQTTPackage* subscriptionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
+	subscriptionBroker->op 						= 3;
+	sprintf(subscriptionBroker->mbox, "%s", source);
+	sprintf(subscriptionBroker->topic, "%s", topic);
+    sg_comm_t comm       						= sg_mailbox_put_async(dest, subscriptionBroker, 0);
 
+    switch (sg_comm_wait_for(comm, 1.0)) 
+    {
+	case SG_ERROR_NETWORK:
+		xbt_free(subscriptionBroker);
+		break;
+	case SG_ERROR_TIMEOUT:
+		xbt_free(subscriptionBroker);
+		break;
+	case SG_OK:
+		/* nothing */
+		break;
+	default:
+		printf("Unexpected behavior with '%s'\n", fog_name);
+		return 1;
+    }
+
+    char* msgACK_sub = sg_mailbox_get(source);
+   
+	if (strcmp(msgACK_sub, "Subscribed") != 0)
+	{
+		printf("Error\n");
+		return 1;
+	}
+	printf("Fog subscribed\n");
+	return 0;
 }
