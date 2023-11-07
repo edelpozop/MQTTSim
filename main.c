@@ -2,10 +2,6 @@
 
 #include "mqtt_sim.h"
 
-#define TOTAL_EDGE 1
-
-
-/* Los edge recibiran como parametros: mbox_in, mbox_broker, qos, fname */
 static void edge (int argc, char**argv)
 {
 	const char* value_broker;
@@ -22,126 +18,41 @@ static void edge (int argc, char**argv)
 
 	int qos_edge = atoi(value_qos), ret = 0;
 
-	/*Conexion con broker*/
-	/*MQTTPackage* connectionBroker 	= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
-	connectionBroker->op 			= 0;
-	connectionBroker->qos 			= qos;
-	sprintf(connectionBroker->mbox, "%s", mbox_edge);
-    sg_comm_t comm_send_Conn       	= sg_mailbox_put_async(mbox_broker, connectionBroker, 0);
-
-    printf("Esperando ACK en %s\n", edge_name);
-
-    switch (sg_comm_wait_for(comm_send_Conn, 1.0)) 
-    {
-	case SG_ERROR_NETWORK:
-		xbt_free(connectionBroker);
-		break;
-	case SG_ERROR_TIMEOUT:
-		xbt_free(connectionBroker);
-		break;
-	case SG_OK:
-		break;
-	default:
-		printf("Unexpected behavior with '%s'\n", edge_name);
-    }
-
-	char* msgACK = sg_mailbox_get(mbox_edge);
-	if (strcmp(msgACK, "Connected") != 0)
-	{
-		printf("Error\n");
-		exit(0);
-	}
-
-	printf("Edge Connected\n");*/
 	ret = mqtt_connect(qos_edge, mbox_edge, mbox_broker);
 
-	/*Lectura sensor*/
+	/*Sensor data reading*/
 
 	FILE *sensor;
-    char linea[128]; // Tamaño máximo de una línea
+    char linea[128]; // Maximum line size
     char topic[128];
     memset(linea, 0, sizeof(linea));
     memset(topic, 0, sizeof(topic));
 
-    // Abre el archivo en modo de lectura
+    // Opens the file in read mode
     sensor = fopen(fname, "r");
 
-    // Verifica si el archivo se abrió correctamente
+    // Checks if the file was opened correctly
     if (sensor == NULL) {
-        printf("No se pudo abrir el archivo.\n");
+        printf("Cannot open file\n");
     }
 
-    // Leer el archivo línea por línea
+    // Reading the file line by line
     while (fgets(linea, sizeof(linea), sensor) != NULL) 
     {
     	sprintf(topic, "%s/%s", edge_name, fname);
     	ret = mqtt_publish(qos_edge, mbox_edge, mbox_broker, topic, linea);
     	memset(linea, 0, sizeof(linea));
-    	memset(topic, 0, sizeof(topic));
-    	/*MQTTPackage* payload = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
-		payload->op = 2;
-		payload->qos = qos;
-		sprintf(payload->topic,"%s/%s", edge_name, fname);
-		sprintf(payload->data,"%s", linea);
-		sprintf(payload->mbox,"%s", mbox_edge);
-		
-		printf("EDGE\t%s\t%s\t%s\n", payload->topic, payload->data, payload->mbox);
-	    sg_comm_t comm_send_Pub       = sg_mailbox_put_async(mbox_broker, payload, 0);
-
-	    switch (sg_comm_wait_for(comm_send_Pub, 1.0)) 
-	    {
-	      case SG_ERROR_NETWORK:
-	        xbt_free(payload);
-	        break;
-	      case SG_ERROR_TIMEOUT:
-	        xbt_free(payload);
-	        break;
-	      case SG_OK:
-	        break;
-	      default:
-	        printf("Unexpected behavior with '%s'\n", edge_name);;
-	    }
-
-    	if(qos == 0) sg_actor_sleep_for(1);*/
-    	
+    	memset(topic, 0, sizeof(topic));   	
     }
 
-    // Cierra el archivo después de leer todas las líneas
+    // Closes the file after reading all lines
     fclose(sensor);
 
-    /*Desconexion con broker*/
+    /*Broker disconnection*/
 
 	mqtt_disconnect(qos_edge, mbox_edge, mbox_broker);
-	/*MQTTPackage* disconnectionBroker = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
-	disconnectionBroker->op = 1;
-	disconnectionBroker->qos = qos;
-	sprintf(disconnectionBroker->mbox,"%s", mbox_edge);
-    sg_comm_t comm_send_Disc       = sg_mailbox_put_async (mbox_broker, disconnectionBroker, 0);
-
-    switch (sg_comm_wait_for(comm_send_Disc, 1.0)) {
-      case SG_ERROR_NETWORK:
-        xbt_free(disconnectionBroker);
-        break;
-      case SG_ERROR_TIMEOUT:
-        xbt_free(disconnectionBroker);
-        break;
-      case SG_OK:
-        break;
-      default:
-        printf("Unexpected behavior with '%s'\n", edge_name);
-    }
-
-	char* msgACK_disc = sg_mailbox_get(mbox_edge);
-
-	if (strcmp(msgACK_disc, "Disconnected") != 0)
-	{
-		printf("Error Edge\n");
-	}
-	printf("Edge Disconnected\n");*/
 }
 
-
-/* El broker recibe como parametro: mbox_inbroker */
 static void broker (int argc, char** argv)
 {
 	const char* broker_name = sg_host_get_name(sg_host_self());
@@ -177,67 +88,19 @@ static void broker (int argc, char** argv)
 				if(active_devices == 0)
 				{
 					mqtt_disconnectAll_b(id_cluster_fog, nodes_fog);
-					/*for (int i = 0; i < nodes_fog; i++)
-					{
-						sprintf(destEnd, "fog-%d-%d", id_cluster_fog, i);
-
-						MQTTPackage* payloadBroker = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
-						payloadBroker->op = 1;
-						sg_mailbox_t mbox_dest			= sg_mailbox_by_name(destEnd);
-				    	sg_comm_t comm_send_fog       	= sg_mailbox_put_async(mbox_dest, payloadBroker, 0);
-
-				    	switch (sg_comm_wait_for(comm_send_fog, 1.0)) {
-						case SG_ERROR_NETWORK:
-							xbt_free(payloadBroker);
-							break;
-						case SG_ERROR_TIMEOUT:
-							xbt_free(payloadBroker);
-							break;
-						case SG_OK:
-							break;
-						default:
-							printf("Unexpected behavior with '%s'\n", broker_name);
-					    }
-					}*/
 					end = 1;
 				}
 				break;
 
 			case 2:	
-				
 				for (int i = 0; i < nodes_fog; i++)
 				{
 					sprintf(dest, "fog-0-%d", i);
-
 					mqtt_publish_b(package.qos, package.mbox, dest, package.topic, package.data);
-					/*
-					MQTTPackage* payloadBroker = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
-					payloadBroker->op = package.op;
-					payloadBroker->qos = package.qos;
-					sprintf(payloadBroker->topic,"%s", package.topic);
-					sprintf(payloadBroker->data,"%s", package.data);
-					sprintf(payloadBroker->mbox,"%s", package.mbox);
-
-					sg_mailbox_t mbox_dest			= sg_mailbox_by_name(dest);
-				    sg_comm_t comm_send_fog       	= sg_mailbox_put_async(mbox_dest, payloadBroker, 0);
-
-				    switch (sg_comm_wait_for(comm_send_fog, 1.0)) {
-					case SG_ERROR_NETWORK:
-						xbt_free(payloadBroker);
-						break;
-					case SG_ERROR_TIMEOUT:
-						xbt_free(payloadBroker);
-						break;
-					case SG_OK:
-						break;
-					default:
-						printf("Unexpected behavior with '%s'\n", broker_name);
-				    }*/
-
 				}
 				break;
 			case 3:
-				/*Se puede guardar en un fichero por cada mbox.fog el tema al que se suscribe*/
+				/*TODO-You can save in a file for each mbox.fog the topic to which you subscribe.*/
 				printf("%s subscribed to %s\n", package.mbox, package.topic);
 				strcpy(ack_broker,"Subscribed");
 				sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
@@ -255,8 +118,6 @@ static void broker (int argc, char** argv)
 	printf("Broker disconnected\n");
 }
 
-
-/* El fog recibe como parametro: mbox_fog, mbox_broker, qos_fog */
 static void fog (int argc, char** argv)
 {
 	const char* value_broker;
@@ -275,36 +136,7 @@ static void fog (int argc, char** argv)
 
 	int qos_fog = atoi(value_qos);
 	
-	/*Conexion con broker*/
-	/*MQTTPackage* connectionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
-	connectionBroker->op 					= 0;
-	connectionBroker->qos 					= qos_fog;
-	sprintf(connectionBroker->mbox, "%s", mbox_fog);
-
-    sg_comm_t comm       					= sg_mailbox_put_async(mbox_broker, connectionBroker, 0);
-
-    switch (sg_comm_wait_for(comm, 1.0)) 
-    {
-	case SG_ERROR_NETWORK:
-		xbt_free(connectionBroker);
-		break;
-	case SG_ERROR_TIMEOUT:
-		xbt_free(connectionBroker);
-		break;
-	case SG_OK:
-		break;
-	default:
-		printf("Unexpected behavior with '%s'\n", fog_name);
-    }
-
-    char* msgACK = sg_mailbox_get(mbox_fog);
-    printf("Fog Connected\n");
-
-	if (strcmp(msgACK, "Connected") != 0)
-	{
-		printf("Error\n");
-		end = 1;
-	}*/
+	/*Fog Connection*/
 
 	end = mqtt_connect(qos_fog, mbox_fog, mbox_broker);
 	
@@ -312,35 +144,6 @@ static void fog (int argc, char** argv)
 
 	if (!end)
 	{
-		/*MQTTPackage* subscriptionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
-		subscriptionBroker->op 						= 3;
-		sprintf(subscriptionBroker->mbox, "%s", mbox_fog);
-		sprintf(subscriptionBroker->topic, "%s", topic_subs);
-	    sg_comm_t comm       						= sg_mailbox_put_async(mbox_broker, subscriptionBroker, 0);
-
-	    switch (sg_comm_wait_for(comm, 1.0)) 
-	    {
-		case SG_ERROR_NETWORK:
-			xbt_free(subscriptionBroker);
-			break;
-		case SG_ERROR_TIMEOUT:
-			xbt_free(subscriptionBroker);
-			break;
-		case SG_OK:
-			break;
-		default:
-			printf("Unexpected behavior with '%s'\n", fog_name);
-	    }
-
-	    char* msgACK_sub = sg_mailbox_get(mbox_fog);
-	   
-		if (strcmp(msgACK_sub, "Subscribed") != 0)
-		{
-			printf("Error\n");
-			end = 1;
-		}
-		printf("Fog subscribed\n");*/
-
 		end = mqtt_subscribe(qos_fog, mbox_fog, mbox_broker, topic_subs);
 	}
 

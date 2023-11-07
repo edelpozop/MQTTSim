@@ -26,7 +26,7 @@ main: main.o mqtt_sim.o
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 clean:
-	rm -f $(BIN_FILES) *.o
+	rm -f $(BIN_FILES) mqtt_sim *.o
 
 .SUFFIXES:
 .PHONY : clean

@@ -16,7 +16,7 @@ typedef struct {
 	char data[128];
 } MQTTPackage;
 
-
+#define TOTAL_EDGE 1
 
 int mqtt_connect(int qos, sg_mailbox_t source, sg_mailbox_t dest);
 void mqtt_disconnect(int qos, sg_mailbox_t source, sg_mailbox_t dest);

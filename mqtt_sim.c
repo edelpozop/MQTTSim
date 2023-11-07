@@ -21,7 +21,6 @@ int mqtt_connect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 		xbt_free(connectionBroker);
 		break;
 	case SG_OK:
-		/* nothing */
 		break;
 	default:
 		printf("Unexpected behavior with '%s'\n", sg_host_get_name(sg_host_self()));
