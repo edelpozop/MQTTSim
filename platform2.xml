@@ -1,0 +1,36 @@
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
+    <platform version="4.1">
+        <zone id="AS0" routing="Full">
+            <zone id="zone1" routing="Full">
+                <prop id="mbox_broker" value="broker-0-0" />     <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                     <!-- qos -           argv[1] -->
+
+                <cluster bw="125MBps" id="edge0" lat="50us" prefix="edge-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="edge0_gtw"/>
+            </zone>
+
+            <zone id="zone2" routing="Full">
+                <prop id="nodes_fog" value="1" />
+                <prop id="id_cluster_fog" value="0" />
+                <cluster bw="125MBps" id="broker0" lat="50us" prefix="broker-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="broker0_gtw"/>
+            </zone>
+
+            <zone id="zone3" routing="Full">
+                <prop id="mbox_broker" value="broker-0-0" />     <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                     <!-- qos -           argv[1] -->
+
+                <cluster bw="125MBps" id="fog0" lat="50us" prefix="fog-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="fog0_gtw"/>
+            </zone>
+
+            <link id="linkEdge0Broker0" bandwidth="1.25GBps" latency="500us" sharing_policy="FATPIPE" />
+            <link id="linkBroker0Fog0" bandwidth="1.25GBps" latency="500us" sharing_policy="FATPIPE" />
+
+           <zoneRoute src="zone1" dst="zone2" gw_src="edge0_gtw" gw_dst="broker0_gtw">
+              <link_ctn id="linkEdge0Broker0"/>
+            </zoneRoute>
+
+            <zoneRoute src="zone2" dst="zone3" gw_src="broker0_gtw" gw_dst="fog0_gtw">
+              <link_ctn id="linkBroker0Fog0"/>
+            </zoneRoute>
+        </zone>
+    </platform>
