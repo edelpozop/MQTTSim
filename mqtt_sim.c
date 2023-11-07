@@ -98,44 +98,46 @@ void mqtt_disconnectAll_b(int id_cluster, int nodes_fog)
 			/* nothing */
 			break;
 		default:
-			printf("Unexpected behavior with '%s'\n", broker_name);
+			printf("Unexpected behavior with '%s'\n", sg_host_get_name(sg_host_self()));
 	    }
 	}
 }
 
 
-void mqtt_publish(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, char* payload)
+int mqtt_publish(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, char* payload)
 {
-	MQTTPackage* payload = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
-	payload->op = 2;
-	payload->qos = qos;
-	sprintf(payload->topic,"%s", topic);
-	sprintf(payload->data,"%s", payload);
-	sprintf(payload->mbox,"%s", source);
+	MQTTPackage* payloadPublish = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
+	payloadPublish->op = 2;
+	payloadPublish->qos = qos;
+	sprintf(payloadPublish->topic,"%s", topic);
+	sprintf(payloadPublish->data,"%s", payload);
+	sprintf(payloadPublish->mbox,"%s", source);
 	
-	printf("publish - %d\t%s\t%s\t%s\n", qos, payload->topic, payload->data, payload->mbox);
-    sg_comm_t comm_send_Pub       = sg_mailbox_put_async(dest, payload, 0);
+	printf("publish - %d\t%s\t%s\t%s\n", qos, payloadPublish->topic, payloadPublish->data, payloadPublish->mbox);
+    sg_comm_t comm_send_Pub       = sg_mailbox_put_async(dest, payloadPublish, 0);
 
     switch (sg_comm_wait_for(comm_send_Pub, 1.0)) 
     {
       case SG_ERROR_NETWORK:
-        xbt_free(payload);
+        xbt_free(payloadPublish);
         break;
       case SG_ERROR_TIMEOUT:
-        xbt_free(payload);
+        xbt_free(payloadPublish);
         break;
       case SG_OK:
         /* nothing */
         break;
       default:
         printf("Unexpected behavior with '%s'\n", sg_host_get_name(sg_host_self()));
+        return 1;
     }
-
     printf("Message sent\n");
+    if(qos == 0) sg_actor_sleep_for(1);
+    return 0;
 }
 
 
-void mqtt_publish_b(int qos, sg_mailbox_t source, char* dest, char* topic, char* payload)
+void mqtt_publish_b(int qos, char* source, char* dest, char* topic, char* payload)
 {
 	MQTTPackage* payloadBroker = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	payloadBroker->op = 2;
@@ -144,7 +146,7 @@ void mqtt_publish_b(int qos, sg_mailbox_t source, char* dest, char* topic, char*
 	// Buscar aquellos que se han suscrito para reenviarlo
 
 	sprintf(payloadBroker->topic,"%s", topic);
-	sprintf(payloadBroker->data,"%s", data);
+	sprintf(payloadBroker->data,"%s", payload);
 	sprintf(payloadBroker->mbox,"%s", source);
 
 	sg_mailbox_t mbox_dest			= sg_mailbox_by_name(dest);
@@ -161,12 +163,12 @@ void mqtt_publish_b(int qos, sg_mailbox_t source, char* dest, char* topic, char*
 		/* nothing */
 		break;
 	default:
-		printf("Unexpected behavior with '%s'\n", broker_name);
+		printf("Unexpected behavior with '%s'\n", sg_host_get_name(sg_host_self()));
     }
 }
 
 
-int mqtt_subscribe(int qos, sg_mailbox_t source, char* dest, sg_mailbox_t dest, char* topic)
+int mqtt_subscribe(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic)
 {
 	MQTTPackage* subscriptionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	subscriptionBroker->op 						= 3;
@@ -186,7 +188,7 @@ int mqtt_subscribe(int qos, sg_mailbox_t source, char* dest, sg_mailbox_t dest, 
 		/* nothing */
 		break;
 	default:
-		printf("Unexpected behavior with '%s'\n", fog_name);
+		printf("Unexpected behavior with '%s'\n", sg_host_get_name(sg_host_self()));
 		return 1;
     }
 
@@ -197,6 +199,6 @@ int mqtt_subscribe(int qos, sg_mailbox_t source, char* dest, sg_mailbox_t dest, 
 		printf("Error\n");
 		return 1;
 	}
-	printf("Fog subscribed\n");
+	printf("%s subscribed\n", sg_host_get_name(sg_host_self()));
 	return 0;
 }

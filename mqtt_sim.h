@@ -9,7 +9,7 @@
 
 // Definición de la estructura de envío de paquetes
 typedef struct {
-	int op;				//0-connect, 1-disconnect, 2-publish, 3-subscribe, 5-end
+	int op;				//0-connect, 1-disconnect/end, 2-publish, 3-subscribe
 	int qos;
 	char mbox[128];
 	char topic[128];
@@ -20,6 +20,7 @@ typedef struct {
 
 int mqtt_connect(int qos, sg_mailbox_t source, sg_mailbox_t dest);
 void mqtt_disconnect(int qos, sg_mailbox_t source, sg_mailbox_t dest);
-void mqtt_publish(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, char* payload);
-void mqtt_publish_b(int qos, sg_mailbox_t source, char* dest, char* topic, char* payload);
-void mqtt_subscribe(int qos, sg_mailbox_t source, char* dest, sg_mailbox_t dest, char* topic);
+void mqtt_disconnectAll_b(int id_cluster, int nodes_fog);
+int mqtt_publish(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, char* payload);
+void mqtt_publish_b(int qos, char* source, char* dest, char* topic, char* payload);
+int mqtt_subscribe(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic);

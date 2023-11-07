@@ -1,4 +1,4 @@
-BIN_FILES  =  example
+BIN_FILES  =  main
 
 INSTALL_PATH = /opt/simgrid-3.34
 
@@ -18,7 +18,7 @@ all: CFLAGS=$(NO_PRAYER_FOR_THE_WICKED)
 all: $(BIN_FILES)
 .PHONY : all
 
-example: example.o
+main: main.o mqtt_sim.o
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 

@@ -1,29 +1,8 @@
 
 
-//#include "mqtt_sim.h"
-#include <simgrid/actor.h>
-#include <simgrid/engine.h>
-#include <simgrid/host.h>
-#include <simgrid/mailbox.h>
-#include "simgrid/zone.h"
-#include "simgrid/comm.h"
-#include "xbt/dict.h"
-#include <xbt/sysdep.h>
-
-// Definición de la estructura de envío de paquetes
-typedef struct {
-	int op;				//0-connect, 1-disconnect, 2-publish, 3-subscribe, 5-end
-	int qos;
-	char mbox[128];
-	char topic[128];
-	char data[128];
-} MQTTPackage;
-
+#include "mqtt_sim.h"
 
 #define TOTAL_EDGE 1
-
-
-
 
 
 /* Los edge recibiran como parametros: mbox_in, mbox_broker, qos, fname */
@@ -41,10 +20,10 @@ static void edge (int argc, char**argv)
 	sg_mailbox_t mbox_edge = sg_mailbox_by_name(sg_host_self());
 	sg_mailbox_t mbox_broker = sg_mailbox_by_name(value_broker);
 
-	int qos = atoi(value_qos);
+	int qos_edge = atoi(value_qos), ret = 0;
 
 	/*Conexion con broker*/
-	MQTTPackage* connectionBroker 	= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
+	/*MQTTPackage* connectionBroker 	= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	connectionBroker->op 			= 0;
 	connectionBroker->qos 			= qos;
 	sprintf(connectionBroker->mbox, "%s", mbox_edge);
@@ -61,7 +40,6 @@ static void edge (int argc, char**argv)
 		xbt_free(connectionBroker);
 		break;
 	case SG_OK:
-		/* nothing */
 		break;
 	default:
 		printf("Unexpected behavior with '%s'\n", edge_name);
@@ -74,12 +52,16 @@ static void edge (int argc, char**argv)
 		exit(0);
 	}
 
-	printf("Edge Connected\n");
+	printf("Edge Connected\n");*/
+	ret = mqtt_connect(qos_edge, mbox_edge, mbox_broker);
+
 	/*Lectura sensor*/
 
 	FILE *sensor;
     char linea[128]; // Tamaño máximo de una línea
+    char topic[128];
     memset(linea, 0, sizeof(linea));
+    memset(topic, 0, sizeof(topic));
 
     // Abre el archivo en modo de lectura
     sensor = fopen(fname, "r");
@@ -92,8 +74,11 @@ static void edge (int argc, char**argv)
     // Leer el archivo línea por línea
     while (fgets(linea, sizeof(linea), sensor) != NULL) 
     {
-
-    	MQTTPackage* payload = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
+    	sprintf(topic, "%s/%s", edge_name, fname);
+    	ret = mqtt_publish(qos_edge, mbox_edge, mbox_broker, topic, linea);
+    	memset(linea, 0, sizeof(linea));
+    	memset(topic, 0, sizeof(topic));
+    	/*MQTTPackage* payload = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 		payload->op = 2;
 		payload->qos = qos;
 		sprintf(payload->topic,"%s/%s", edge_name, fname);
@@ -112,21 +97,22 @@ static void edge (int argc, char**argv)
 	        xbt_free(payload);
 	        break;
 	      case SG_OK:
-	        /* nothing */
 	        break;
 	      default:
 	        printf("Unexpected behavior with '%s'\n", edge_name);;
 	    }
 
-    	if(qos == 0) sg_actor_sleep_for(1);
-    	memset(linea, 0, sizeof(linea));
+    	if(qos == 0) sg_actor_sleep_for(1);*/
+    	
     }
 
     // Cierra el archivo después de leer todas las líneas
     fclose(sensor);
 
     /*Desconexion con broker*/
-	MQTTPackage* disconnectionBroker = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
+
+	mqtt_disconnect(qos_edge, mbox_edge, mbox_broker);
+	/*MQTTPackage* disconnectionBroker = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	disconnectionBroker->op = 1;
 	disconnectionBroker->qos = qos;
 	sprintf(disconnectionBroker->mbox,"%s", mbox_edge);
@@ -140,7 +126,6 @@ static void edge (int argc, char**argv)
         xbt_free(disconnectionBroker);
         break;
       case SG_OK:
-        /* nothing */
         break;
       default:
         printf("Unexpected behavior with '%s'\n", edge_name);
@@ -152,7 +137,7 @@ static void edge (int argc, char**argv)
 	{
 		printf("Error Edge\n");
 	}
-	printf("Edge Disconnected\n");
+	printf("Edge Disconnected\n");*/
 }
 
 
@@ -191,7 +176,8 @@ static void broker (int argc, char** argv)
 
 				if(active_devices == 0)
 				{
-					for (int i = 0; i < nodes_fog; i++)
+					mqtt_disconnectAll_b(id_cluster_fog, nodes_fog);
+					/*for (int i = 0; i < nodes_fog; i++)
 					{
 						sprintf(destEnd, "fog-%d-%d", id_cluster_fog, i);
 
@@ -208,21 +194,23 @@ static void broker (int argc, char** argv)
 							xbt_free(payloadBroker);
 							break;
 						case SG_OK:
-							/* nothing */
 							break;
 						default:
 							printf("Unexpected behavior with '%s'\n", broker_name);
 					    }
-					}
+					}*/
 					end = 1;
 				}
 				break;
 
 			case 2:	
+				
 				for (int i = 0; i < nodes_fog; i++)
 				{
 					sprintf(dest, "fog-0-%d", i);
 
+					mqtt_publish_b(package.qos, package.mbox, dest, package.topic, package.data);
+					/*
 					MQTTPackage* payloadBroker = (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 					payloadBroker->op = package.op;
 					payloadBroker->qos = package.qos;
@@ -241,11 +229,10 @@ static void broker (int argc, char** argv)
 						xbt_free(payloadBroker);
 						break;
 					case SG_OK:
-						/* nothing */
 						break;
 					default:
 						printf("Unexpected behavior with '%s'\n", broker_name);
-				    }
+				    }*/
 
 				}
 				break;
@@ -289,7 +276,7 @@ static void fog (int argc, char** argv)
 	int qos_fog = atoi(value_qos);
 	
 	/*Conexion con broker*/
-	MQTTPackage* connectionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
+	/*MQTTPackage* connectionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	connectionBroker->op 					= 0;
 	connectionBroker->qos 					= qos_fog;
 	sprintf(connectionBroker->mbox, "%s", mbox_fog);
@@ -305,7 +292,6 @@ static void fog (int argc, char** argv)
 		xbt_free(connectionBroker);
 		break;
 	case SG_OK:
-		/* nothing */
 		break;
 	default:
 		printf("Unexpected behavior with '%s'\n", fog_name);
@@ -318,13 +304,15 @@ static void fog (int argc, char** argv)
 	{
 		printf("Error\n");
 		end = 1;
-	}
+	}*/
+
+	end = mqtt_connect(qos_fog, mbox_fog, mbox_broker);
 	
 	/*Subscription*/
 
 	if (!end)
 	{
-		MQTTPackage* subscriptionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
+		/*MQTTPackage* subscriptionBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 		subscriptionBroker->op 						= 3;
 		sprintf(subscriptionBroker->mbox, "%s", mbox_fog);
 		sprintf(subscriptionBroker->topic, "%s", topic_subs);
@@ -339,7 +327,6 @@ static void fog (int argc, char** argv)
 			xbt_free(subscriptionBroker);
 			break;
 		case SG_OK:
-			/* nothing */
 			break;
 		default:
 			printf("Unexpected behavior with '%s'\n", fog_name);
@@ -352,7 +339,9 @@ static void fog (int argc, char** argv)
 			printf("Error\n");
 			end = 1;
 		}
-		printf("Fog subscribed\n");
+		printf("Fog subscribed\n");*/
+
+		end = mqtt_subscribe(qos_fog, mbox_fog, mbox_broker, topic_subs);
 	}
 
 	while(!end)
