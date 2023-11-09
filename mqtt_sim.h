@@ -2,9 +2,10 @@
 #include <simgrid/engine.h>
 #include <simgrid/host.h>
 #include <simgrid/mailbox.h>
-#include "simgrid/zone.h"
-#include "simgrid/comm.h"
-#include "xbt/dict.h"
+#include <simgrid/plugins/energy.h>
+#include <simgrid/zone.h>
+#include <simgrid/comm.h>
+#include <xbt/dict.h>
 #include <xbt/sysdep.h>
 
 // Definición de la estructura de envío de paquetes

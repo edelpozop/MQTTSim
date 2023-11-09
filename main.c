@@ -7,14 +7,14 @@ static void edge (int argc, char**argv)
 	const char* value_broker;
 	const char* value_qos;
 
-	const char* edge_name 	= sg_host_get_name(sg_host_self());
-	const char* fname 		= sg_host_get_name(sg_host_self());
+	const char* edge_name 		= sg_host_get_name(sg_host_self());
+	const char* fname 			= sg_host_get_name(sg_host_self());
 
-	value_broker 	= sg_zone_get_property_value(sg_zone_get_by_name("zone1"), "mbox_broker");
-	value_qos 		= sg_zone_get_property_value(sg_zone_get_by_name("zone1"), "qos");
+	value_broker 				= sg_host_get_property_value(sg_host_self(), "mbox_broker");
+	value_qos 					= sg_host_get_property_value(sg_host_self(), "qos");
 
-	sg_mailbox_t mbox_edge = sg_mailbox_by_name(sg_host_self());
-	sg_mailbox_t mbox_broker = sg_mailbox_by_name(value_broker);
+	sg_mailbox_t mbox_edge 		= sg_mailbox_by_name(edge_name);
+	sg_mailbox_t mbox_broker 	= sg_mailbox_by_name(value_broker);
 
 	int qos_edge = atoi(value_qos), ret = 0;
 
@@ -39,7 +39,7 @@ static void edge (int argc, char**argv)
     // Reading the file line by line
     while (fgets(linea, sizeof(linea), sensor) != NULL) 
     {
-    	sprintf(topic, "%s/%s", edge_name, fname);
+    	sprintf(topic, "%s/%s", sg_host_self(), fname);
     	ret = mqtt_publish(qos_edge, mbox_edge, mbox_broker, topic, linea);
     	memset(linea, 0, sizeof(linea));
     	memset(topic, 0, sizeof(topic));   	
@@ -55,10 +55,10 @@ static void edge (int argc, char**argv)
 
 static void broker (int argc, char** argv)
 {
-	const char* broker_name = sg_host_get_name(sg_host_self());
-	sg_mailbox_t mbox_inb = sg_mailbox_by_name(broker_name);
-	int nodes_fog = atoi(sg_zone_get_property_value(sg_zone_get_by_name("zone2"), "nodes_fog"));
-	int id_cluster_fog = atoi(sg_zone_get_property_value(sg_zone_get_by_name("zone2"), "id_cluster_fog"));
+	const char* broker_name 		= sg_host_get_name(sg_host_self());
+	sg_mailbox_t mbox_inb 			= sg_mailbox_by_name(broker_name);
+	int nodes_fog 					= atoi(sg_host_get_property_value(sg_host_self(), "nodes_fog"));
+	int id_cluster_fog 				= atoi(sg_host_get_property_value(sg_host_self(), "id_cluster_fog"));
 	char ack_broker[128], destEnd[128], dest[128];
 	int active_devices = TOTAL_EDGE;
 	int end = 0;
@@ -68,7 +68,6 @@ static void broker (int argc, char** argv)
 		MQTTPackage* payload;
 		sg_comm_t comm     = sg_mailbox_get_async(mbox_inb, (void**)&payload);
 		sg_error_t retcode = sg_comm_wait(comm);
-
 	    if (retcode == SG_OK) 
 	    {
 			MQTTPackage package = *payload;
@@ -123,16 +122,16 @@ static void fog (int argc, char** argv)
 	const char* value_broker;
 	const char* value_qos;
 	const char* topic_subs;
-	const char* fog_name 	= sg_host_get_name(sg_host_self());
-	const char* fname 		= sg_host_get_name(sg_host_self());
+	const char* fog_name 		= sg_host_get_name(sg_host_self());
 	int end = 0;
 
-	value_broker 	= sg_zone_get_property_value(sg_zone_get_by_name("zone3"), "mbox_broker");
-	value_qos 		= sg_zone_get_property_value(sg_zone_get_by_name("zone3"), "qos");
-	topic_subs 		= sg_zone_get_property_value(sg_zone_get_by_name("zone3"), "subscribe");
+	value_broker 				= sg_host_get_property_value(sg_host_self(), "mbox_broker");
+	
+	value_qos 					= sg_host_get_property_value(sg_host_self(), "qos");
+	topic_subs 					= sg_host_get_property_value(sg_host_self(), "subscribe");
 
-	sg_mailbox_t mbox_fog = sg_mailbox_by_name(fog_name);
-	sg_mailbox_t mbox_broker = sg_mailbox_by_name(value_broker);
+	sg_mailbox_t mbox_fog 		= sg_mailbox_by_name(fog_name);
+	sg_mailbox_t mbox_broker 	= sg_mailbox_by_name(value_broker);
 
 	int qos_fog = atoi(value_qos);
 	
@@ -183,6 +182,7 @@ int main(int argc, char* argv[])
 
 	/* load the platform file */
 	simgrid_load_platform(argv[1]);
+	sg_host_energy_plugin_init();
 
 	int broker_argc           = 0;
 	const char* broker_argv[] = {NULL};
