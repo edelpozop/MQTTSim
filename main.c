@@ -2,7 +2,12 @@
 
 #include "mqtt_sim.h"
 
-static void edge (int argc, char**argv)
+
+// Tamaño máximo (2MB)
+#define REPEAT_COUNT 100
+#define MQTT_TOPIC "pingpong"
+
+/*static void edge (int argc, char**argv)
 {
 	const char* value_broker;
 	const char* value_qos;
@@ -20,7 +25,7 @@ static void edge (int argc, char**argv)
 
 	ret = mqtt_connect(qos_edge, mbox_edge, mbox_broker);
 
-	/*Sensor data reading*/
+	//Sensor data reading
 
 	FILE *sensor;
     char linea[128]; // Maximum line size
@@ -48,74 +53,101 @@ static void edge (int argc, char**argv)
     // Closes the file after reading all lines
     fclose(sensor);
 
-    /*Broker disconnection*/
+    //Broker disconnection
+
+	mqtt_disconnect(qos_edge, mbox_edge, mbox_broker);
+}*/
+
+
+static void edge (int argc, char**argv)
+{
+	double start_time;
+    double end_time;
+    double used_time;
+    double avg_time;
+    double us_rate;
+
+	const char* value_broker;
+	const char* value_qos;
+
+	const char* edge_name 		= sg_host_get_name(sg_host_self());
+	const char* fname 			= sg_host_get_name(sg_host_self());
+
+	value_broker 				= sg_host_get_property_value(sg_host_self(), "mbox_broker");
+	value_qos 					= sg_host_get_property_value(sg_host_self(), "qos");
+
+	sg_mailbox_t mbox_edge 		= sg_mailbox_by_name(edge_name);
+	sg_mailbox_t mbox_broker 	= sg_mailbox_by_name(value_broker);
+
+	int qos_edge = atoi(value_qos), ret = 0;
+
+	ret = mqtt_connect(qos_edge, mbox_edge, mbox_broker);
+
+	// Abrir el archivo CSV y escribir los encabezados
+    FILE *csv_file = fopen("MQTTSimgrid.csv", "w");
+    if (csv_file) {
+        fprintf(csv_file, "Data Size (B);Time Elapsed (s);Transfer Rate (MB/s)\n");
+    }
+
+    int payload_size = 1;
+
+	while (payload_size <= MAX_PAYLOAD_SIZE) 
+    {
+    	char message[payload_size];
+        // Iniciar el reloj
+        avg_time = 0.0;
+        start_time = simgrid_get_clock();
+        
+        for (int repeat = 0; repeat < REPEAT_COUNT; repeat++) 
+        {
+            // Publicar el mensaje
+            snprintf(message, payload_size, "%*s", payload_size, "Ping");
+            ret = mqtt_publish(qos_edge, mbox_edge, mbox_broker, MQTT_TOPIC, message, payload_size);
+        }
+
+        used_time = (simgrid_get_clock() - start_time);
+        avg_time = used_time;
+
+        avg_time = avg_time / (float) REPEAT_COUNT;
+
+        if (avg_time > 0) /* rate is megabytes per second */
+            us_rate = (double)((payload_size) / (avg_time * (double) 1000000));
+        else
+            us_rate = 0.0;
+
+        // Escribir los datos en el archivo CSV
+        if (csv_file) 
+        {
+            fprintf(csv_file, "%d;%.8f;%.8f\n", payload_size, avg_time, us_rate);
+            printf("%d\t\t%.8f\t\t%.8f\n", payload_size, avg_time, us_rate);
+        }
+
+        // Aumentar el tamaño del payload (duplicarlo) para la próxima iteración
+        payload_size *= 2;
+    }
+
+    if (csv_file) 
+    {
+        fclose(csv_file);
+    }    
+
+    //Broker disconnection
 
 	mqtt_disconnect(qos_edge, mbox_edge, mbox_broker);
 }
+
 
 static void broker (int argc, char** argv)
 {
 	const char* broker_name 		= sg_host_get_name(sg_host_self());
 	sg_mailbox_t mbox_inb 			= sg_mailbox_by_name(broker_name);
-	int nodes_fog 					= atoi(sg_host_get_property_value(sg_host_self(), "nodes_fog"));
 	int id_cluster_fog 				= atoi(sg_host_get_property_value(sg_host_self(), "id_cluster_fog"));
-	char ack_broker[128], destEnd[128], dest[128];
-	int active_devices = TOTAL_EDGE;
-	int end = 0;
+	int nodes_fog 					= atoi(sg_host_get_property_value(sg_host_self(), "nodes_fog"));
+	int active_devices 				= TOTAL_EDGE;
 
-	while(!end)
-	{
-		MQTTPackage* payload;
-		sg_comm_t comm     = sg_mailbox_get_async(mbox_inb, (void**)&payload);
-		sg_error_t retcode = sg_comm_wait(comm);
-	    if (retcode == SG_OK) 
-	    {
-			MQTTPackage package = *payload;
-			xbt_free(payload);
-			switch(package.op)
-			{
-			case 0:
-				strcpy(ack_broker,"Connected");
-				sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
-				break;
-
-			case 1:
-				strcpy(ack_broker,"Disconnected");
-				sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
-				active_devices--;
-
-				if(active_devices == 0)
-				{
-					mqtt_disconnectAll_b(id_cluster_fog, nodes_fog);
-					end = 1;
-				}
-				break;
-
-			case 2:	
-				for (int i = 0; i < nodes_fog; i++)
-				{
-					sprintf(dest, "fog-0-%d", i);
-					mqtt_publish_b(package.qos, package.mbox, dest, package.topic, package.data);
-				}
-				break;
-			case 3:
-				/*TODO-You can save in a file for each mbox.fog the topic to which you subscribe.*/
-				printf("%s subscribed to %s\n", package.mbox, package.topic);
-				strcpy(ack_broker,"Subscribed");
-				sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
-				break;
-
-			default:
-			}
-		} 
-		else if (retcode == SG_ERROR_NETWORK) 
-		{
-			printf("Mmh. Something went wrong. Nevermind. Let's keep going!\n");
-		}
-	}
-	
-	printf("Broker disconnected\n");
+	broker_run(mbox_inb, id_cluster_fog, nodes_fog, active_devices);
 }
+
 
 static void fog (int argc, char** argv)
 {
@@ -149,8 +181,8 @@ static void fog (int argc, char** argv)
 	while(!end)
 	{
 		MQTTPackage* payload;
-		sg_comm_t comm     = sg_mailbox_get_async(mbox_fog, (void**) &payload);
-		sg_error_t retcode = sg_comm_wait(comm);
+		sg_comm_t comm     		= sg_mailbox_get_async(mbox_fog, (void**) &payload);
+		sg_error_t retcode 		= sg_comm_wait(comm);
 
 	    if (retcode == SG_OK) 
 	    {

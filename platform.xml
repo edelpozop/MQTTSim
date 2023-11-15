@@ -2,21 +2,21 @@
 <!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
     <platform version="4.1">
         <zone id="AS0" routing="Full">
-            <cluster bw="125MBps" id="edge0" lat="50us" prefix="edge-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="edge0_gtw">
+            <cluster bw="1000GBps" id="edge0" lat="0ms" prefix="edge-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="edge0_gtw">
                 <prop id="wattage_per_state" value="1.0:1.2:2.0" />
                 <prop id="wattage_off" value="1" />
                 <prop id="mbox_broker" value="broker-0-0" />        <!-- mbox_broker -   argv[0] -->
                 <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
             </cluster>
 
-            <cluster bw="125MBps" id="broker0" lat="50us" prefix="broker-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="broker0_gtw">
+            <cluster bw="1000GBps" id="broker0" lat="0ms" prefix="broker-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="broker0_gtw">
                 <prop id="wattage_per_state" value="10.0:12.0:20.0" />
                 <prop id="wattage_off" value="10" />
                 <prop id="nodes_fog" value="1" />
                 <prop id="id_cluster_fog" value="0" />
             </cluster>
 
-            <cluster bw="125MBps" id="fog0" lat="50us" prefix="fog-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="fog0_gtw">
+            <cluster bw="1000GBps" id="fog0" lat="0ms" prefix="fog-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="fog0_gtw">
                 <prop id="wattage_per_state" value="10.0:12.0:20.0" />
                 <prop id="wattage_off" value="10" />
                 <prop id="mbox_broker" value="broker-0-0" />        <!-- mbox_broker -   argv[0] -->
@@ -24,8 +24,8 @@
                 <prop id="subscribe" value="/" />
             </cluster>
 
-            <link id="linkEdge0Broker0" bandwidth="1.25GBps" latency="500us" sharing_policy="FATPIPE" />
-            <link id="linkBroker0Fog0" bandwidth="1.25GBps" latency="500us" sharing_policy="FATPIPE" />
+            <link id="linkEdge0Broker0" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkBroker0Fog0" bandwidth="125MBps" latency="0.0059ms"  />
 
             <zoneRoute src="edge0" dst="broker0" gw_src="edge0_gtw" gw_dst="broker0_gtw">
               <link_ctn id="linkEdge0Broker0"/>
