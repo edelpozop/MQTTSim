@@ -1,5 +1,5 @@
 #include "mqtt_sim.h"
-
+#include "subscriptions.h"
 
 int mqtt_connect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 {
@@ -31,10 +31,10 @@ void mqtt_disconnect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 	disconnectionBroker->op 			= 1;
 	disconnectionBroker->qos 			= qos;
 	disconnectionBroker->mbox 			= source;
-
+	
     sg_mailbox_put (dest, disconnectionBroker, 0);
 
-	char* msgACK_disc = sg_mailbox_get(source);
+    char* msgACK_disc 					= sg_mailbox_get(source);
 	if (strcmp(msgACK_disc, "Disconnected") != 0)
 	{
 		printf("Error in %s\n", sg_host_get_name(sg_host_self()));
@@ -82,28 +82,30 @@ int mqtt_publish(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, c
 }
 
 
-void mqtt_publish_b(int qos, char* source, char* dest, char* topic, char* payload, int payloadlen)
+void mqtt_publish_b (int qos, char* source, char* dest, char* topic, char* payload, int payloadlen)
 {
 	MQTTPackage* payloadBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	payloadBroker->op 					= 2;
 	payloadBroker->qos 					= qos;
 	payloadBroker->payloadlen 			= payloadlen;
 	payloadBroker->mbox 				= source;
-	sprintf(payloadBroker->topic,"%s", topic);
 
+	sg_mailbox_t mbox_dest				= sg_mailbox_by_name(dest);
 	int sizeofStruct 					= (sizeof(int) * 3) + (sizeof(payloadBroker->mbox) + sizeof(payloadBroker->topic) + payloadlen);
+
+	sprintf(payloadBroker->topic,"%s", topic);
 	
 	// Buscar aquellos que se han suscrito para reenviarlo
 	
 	//sprintf(payloadBroker->data,"%s", payload);
 	
 
-	sg_mailbox_t mbox_dest				= sg_mailbox_by_name(dest);
+	
     sg_mailbox_put (mbox_dest, payloadBroker, sizeofStruct/2);
 }
 
 
-int mqtt_subscribe(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic)
+int mqtt_subscribe (int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic)
 {
 	MQTTPackage* subscriptionBroker 	= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	subscriptionBroker->op 				= 3;
@@ -112,10 +114,10 @@ int mqtt_subscribe(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic)
     sg_mailbox_put_async(dest, subscriptionBroker, 0);
 
     char* msgACK_sub 					= sg_mailbox_get(source);
-   
+
 	if (strcmp(msgACK_sub, "Subscribed") != 0)
 	{
-		printf("Error\n");
+		printf("Error in subscription\n");
 		return 1;
 	}
 
@@ -124,7 +126,7 @@ int mqtt_subscribe(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic)
 }
 
 
-void broker_run(sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int active_devices)
+void broker_run (sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int active_devices)
 {
 	sg_mailbox_t mbroker 				= mbox;
 	int id_cluster_f 					= id_cluster_fog;
@@ -133,10 +135,10 @@ void broker_run(sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int active
 	int end 							= 0;
 
 	char ack_broker[128], destEnd[128], dest[128];
+	Sub* list 							= NULL;
 	
 	while(!end)
 	{
-		//printf("%s ready\n", sg_host_get_name(sg_host_self()));
 		MQTTPackage* payload 			= sg_mailbox_get(mbroker);
 		MQTTPackage package 			= *payload;
 		xbt_free(payload);
@@ -156,6 +158,7 @@ void broker_run(sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int active
 
 			if(active_d == 0)
 			{
+				printList(&list);
 				mqtt_disconnectAll_b(id_cluster_fog, nodes_fog);
 				end = 1;
 			}
@@ -168,15 +171,33 @@ void broker_run(sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int active
 			}
 			break;
 		case 3:
-			/*TODO-You can save in a file for each mbox.fog the topic to which you subscribe.*/
 			//printf("%s subscribed to %s\n", package.mbox, package.topic);
-			strcpy(ack_broker,"Subscribed");
-			sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
+
+			if(insertSub(&list, package.mbox, package.topic) == 0)
+			{
+				strcpy(ack_broker,"Subscribed");
+				sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
+			}
+
 			break;
 
+		case 4:
+		    deleteSub(&list, package.mbox, package.topic);
+		    strcpy(ack_broker,"Unsubscribed");
+			sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
+			break;
 		default:
 		}
 	}
 	
+	// Liberar memoria al finalizar
+    Sub* current = list;
+    while (current != NULL) 
+    {
+        Sub* next = current->next;
+        free(current);
+        current = next;
+    }
+
 	printf("Broker disconnected\n");
 }

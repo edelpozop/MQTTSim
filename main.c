@@ -61,6 +61,8 @@
 
 static void edge (int argc, char**argv)
 {
+	double start_time, end_time, used_time, avg_time, us_rate;
+
 	const char* edge_name 		= sg_host_get_name(sg_host_self());
 	const char* fname 			= sg_host_get_name(sg_host_self());
 	const char* value_broker	= sg_host_get_property_value(sg_host_self(), "mbox_broker");
@@ -72,11 +74,6 @@ static void edge (int argc, char**argv)
     printf("%p %s %p\n", sg_host_self(), sg_host_get_name(sg_host_self()), sg_mailbox_by_name(edge_name));
 
 	sg_actor_sleep_for(1);
-	double start_time;
-    double end_time;
-    double used_time;
-    double avg_time;
-    double us_rate;
 
 	int qos_edge = atoi(value_qos), ret = 0;
 
@@ -102,7 +99,7 @@ static void edge (int argc, char**argv)
 
     avg_time = used_time;
 
-    avg_time = avg_time / (float) 10;
+    avg_time = avg_time / (float) TOTAL_MESSAGES;
 
     if (avg_time > 0) /* rate is megabytes per second */
         us_rate = (double)((MAX_PAYLOAD_SIZE) / (avg_time * (double) 1000000));
@@ -133,7 +130,23 @@ static void broker (int argc, char** argv)
 	sg_mailbox_t mbox_inb 			= sg_mailbox_by_name(broker_name);
 	int id_cluster_fog 				= atoi(sg_host_get_property_value(sg_host_self(), "id_cluster_fog"));
 	int nodes_fog 					= atoi(sg_host_get_property_value(sg_host_self(), "nodes_fog"));
-	int active_devices 				= TOTAL_EDGE0;
+
+	int active_devices				= 0;
+
+	switch (id_cluster_fog)
+	{
+	case 0:
+		active_devices 				= TOTAL_EDGE0;
+		break;
+	case 1:
+		active_devices 				= TOTAL_EDGE1;
+		break;
+	case 2:
+		active_devices 				= TOTAL_EDGE2;
+		break;
+	default:
+		active_devices 				= TOTAL_EDGE3;
+	}
 
 	broker_run(mbox_inb, id_cluster_fog, nodes_fog, active_devices);
 }
@@ -145,12 +158,10 @@ static void fog (int argc, char** argv)
 	const char* value_broker 		= sg_host_get_property_value(sg_host_self(), "mbox_broker");
 	const char* value_qos 			= sg_host_get_property_value(sg_host_self(), "qos");
 	const char* topic_subs 			= sg_host_get_property_value(sg_host_self(), "subscribe");
-	
-	int end = 0;
-
 	sg_mailbox_t mbox_fog 			= sg_mailbox_by_name(fog_name);
 	sg_mailbox_t mbox_broker 		= sg_mailbox_by_name(value_broker);
 
+	int end = 0;
 	int qos_fog = atoi(value_qos);
 	
 	/*Fog Connection*/

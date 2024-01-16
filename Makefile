@@ -18,7 +18,7 @@ all: CFLAGS=$(NO_PRAYER_FOR_THE_WICKED)
 all: $(BIN_FILES)
 .PHONY : all
 
-main: main.o mqtt_sim.o
+main: main.o mqtt_sim.o subscriptions.o
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 
@@ -26,7 +26,7 @@ main: main.o mqtt_sim.o
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 clean:
-	rm -f $(BIN_FILES) mqtt_sim *.o
+	rm -f $(BIN_FILES) mqtt_sim subscriptions *.o
 
 .SUFFIXES:
 .PHONY : clean

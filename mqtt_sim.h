@@ -9,15 +9,15 @@
 #include <xbt/sysdep.h>
 
 #define MAX_PAYLOAD_SIZE (1024) 
-#define TOTAL_EDGE0 100
-#define TOTAL_EDGE1 100
-#define TOTAL_EDGE2 100
-#define TOTAL_EDGE3 100
+#define TOTAL_EDGE0 10
+#define TOTAL_EDGE1 10
+#define TOTAL_EDGE2 10
+#define TOTAL_EDGE3 10
 #define TOTAL_FOG0 1
 #define TOTAL_FOG1 1
 #define TOTAL_FOG2 1
 #define TOTAL_FOG3 1
-#define TOTAL_MESSAGES 10000
+#define TOTAL_MESSAGES 100
 
 // Definición de la estructura de envío de paquetes
 typedef struct {
@@ -31,10 +31,10 @@ typedef struct {
 
 
 
-int mqtt_connect(int qos, sg_mailbox_t source, sg_mailbox_t dest);
-void mqtt_disconnect(int qos, sg_mailbox_t source, sg_mailbox_t dest);
-void mqtt_disconnectAll_b(int id_cluster, int nodes_fog);
-int mqtt_publish(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, char* payload, int payloadlen);
-void mqtt_publish_b(int qos, char* source, char* dest, char* topic, char* payload, int payloadlen);
-int mqtt_subscribe(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic);
-void broker_run(sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int active_devices);
+int mqtt_connect 			(int qos, sg_mailbox_t source, sg_mailbox_t dest);
+void mqtt_disconnect 		(int qos, sg_mailbox_t source, sg_mailbox_t dest);
+void mqtt_disconnectAll_b 	(int id_cluster, int nodes_fog);
+int mqtt_publish 			(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, char* payload, int payloadlen);
+void mqtt_publish_b 		(int qos, char* source, char* dest, char* topic, char* payload, int payloadlen);
+int mqtt_subscribe 			(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic);
+void broker_run 			(sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int active_devices);
