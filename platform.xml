@@ -2,20 +2,6 @@
 <!DOCTYPE platform SYSTEM "https://simgrid.org/simgrid.dtd">
     <platform version="4.1">
         <zone id="AS0" routing="Full">
-            <cluster bw="1000GBps" id="edge0" lat="0ms" prefix="edge-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="edge0_gtw">
-                <prop id="wattage_per_state" value="1.0:1.2:2.0" />
-                <prop id="wattage_off" value="1" />
-                <prop id="mbox_broker" value="broker-0-0" />        <!-- mbox_broker -   argv[0] -->
-                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
-            </cluster>
-
-            <cluster bw="1000GBps" id="broker0" lat="0ms" prefix="broker-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="broker0_gtw">
-                <prop id="wattage_per_state" value="10.0:12.0:20.0" />
-                <prop id="wattage_off" value="10" />
-                <prop id="nodes_fog" value="1" />
-                <prop id="id_cluster_fog" value="0" />
-            </cluster>
-
             <cluster bw="1000GBps" id="fog0" lat="0ms" prefix="fog-0-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="fog0_gtw">
                 <prop id="wattage_per_state" value="10.0:12.0:20.0" />
                 <prop id="wattage_off" value="10" />
@@ -23,16 +9,167 @@
                 <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
                 <prop id="subscribe" value="/" />
             </cluster>
+            <cluster bw="1000GBps" id="edge0" lat="0ms" prefix="edge-0-" suffix="" radical="0-1000" core="6" speed="4Gf" router_id="edge0_gtw">
+                <prop id="wattage_per_state" value="1.0:1.2:2.0" />
+                <prop id="wattage_off" value="1" />
+                <prop id="mbox_broker" value="broker-0-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
+            </cluster>
+            <cluster bw="1000GBps" id="broker0" lat="0ms" prefix="broker-0-" suffix="" radical="0-1" core="6" speed="4Gf" router_id="broker0_gtw">
+                <prop id="wattage_per_state" value="10.0:12.0:20.0" />
+                <prop id="wattage_off" value="10" />
+                <prop id="nodes_fog" value="1" />
+                <prop id="id_cluster_fog" value="0" />
+            </cluster>
+
+            <cluster bw="1000GBps" id="fog1" lat="0ms" prefix="fog-1-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="fog1_gtw">
+                <prop id="wattage_per_state" value="10.0:12.0:20.0" />
+                <prop id="wattage_off" value="10" />
+                <prop id="mbox_broker" value="broker-1-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
+                <prop id="subscribe" value="/" />
+            </cluster>
+            <cluster bw="1000GBps" id="edge1" lat="0ms" prefix="edge-1-" suffix="" radical="0-1000" core="6" speed="4Gf" router_id="edge1_gtw">
+                <prop id="wattage_per_state" value="1.0:1.2:2.0" />
+                <prop id="wattage_off" value="1" />
+                <prop id="mbox_broker" value="broker-1-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
+            </cluster>
+            <cluster bw="1000GBps" id="broker1" lat="0ms" prefix="broker-1-" suffix="" radical="0-1" core="6" speed="4Gf" router_id="broker1_gtw">
+                <prop id="wattage_per_state" value="10.0:12.0:20.0" />
+                <prop id="wattage_off" value="10" />
+                <prop id="nodes_fog" value="1" />
+                <prop id="id_cluster_fog" value="1" />
+            </cluster>
+
+            <cluster bw="1000GBps" id="fog2" lat="0ms" prefix="fog-2-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="fog2_gtw">
+                <prop id="wattage_per_state" value="10.0:12.0:20.0" />
+                <prop id="wattage_off" value="10" />
+                <prop id="mbox_broker" value="broker-2-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
+                <prop id="subscribe" value="/" />
+            </cluster>
+            <cluster bw="1000GBps" id="edge2" lat="0ms" prefix="edge-2-" suffix="" radical="0-1000" core="6" speed="4Gf" router_id="edge2_gtw">
+                <prop id="wattage_per_state" value="1.0:1.2:2.0" />
+                <prop id="wattage_off" value="1" />
+                <prop id="mbox_broker" value="broker-2-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
+            </cluster>
+            <cluster bw="1000GBps" id="broker2" lat="0ms" prefix="broker-2-" suffix="" radical="0-1" core="6" speed="4Gf" router_id="broker2_gtw">
+                <prop id="wattage_per_state" value="10.0:12.0:20.0" />
+                <prop id="wattage_off" value="10" />
+                <prop id="nodes_fog" value="1" />
+                <prop id="id_cluster_fog" value="2" />
+            </cluster>
+            
+            <cluster bw="1000GBps" id="fog3" lat="0ms" prefix="fog-3-" suffix="" radical="0-1" core="6" speed="1Gf" router_id="fog3_gtw">
+                <prop id="wattage_per_state" value="10.0:12.0:20.0" />
+                <prop id="wattage_off" value="10" />
+                <prop id="mbox_broker" value="broker-3-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
+                <prop id="subscribe" value="/" />
+            </cluster>
+            <cluster bw="1000GBps" id="edge3" lat="0ms" prefix="edge-3-" suffix="" radical="0-1000" core="6" speed="4Gf" router_id="edge3_gtw">
+                <prop id="wattage_per_state" value="1.0:1.2:2.0" />
+                <prop id="wattage_off" value="1" />
+                <prop id="mbox_broker" value="broker-3-0" />        <!-- mbox_broker -   argv[0] -->
+                <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
+            </cluster>
+            <cluster bw="1000GBps" id="broker3" lat="0ms" prefix="broker-3-" suffix="" radical="0-1" core="6" speed="4Gf" router_id="broker3_gtw">
+                <prop id="wattage_per_state" value="10.0:12.0:20.0" />
+                <prop id="wattage_off" value="10" />
+                <prop id="nodes_fog" value="1" />
+                <prop id="id_cluster_fog" value="3" />
+            </cluster>
 
             <link id="linkEdge0Broker0" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge0Broker1" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge0Broker2" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge0Broker3" bandwidth="125MBps" latency="0.0059ms" />
+
+            <link id="linkEdge1Broker0" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge1Broker1" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge1Broker2" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge1Broker3" bandwidth="125MBps" latency="0.0059ms" />
+
+            <link id="linkEdge2Broker0" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge2Broker1" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge2Broker2" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge2Broker3" bandwidth="125MBps" latency="0.0059ms" />
+
+            <link id="linkEdge3Broker0" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge3Broker1" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge3Broker2" bandwidth="125MBps" latency="0.0059ms" />
+            <link id="linkEdge3Broker3" bandwidth="125MBps" latency="0.0059ms" />
+
             <link id="linkBroker0Fog0" bandwidth="125MBps" latency="0.0059ms"  />
+            <link id="linkBroker1Fog1" bandwidth="125MBps" latency="0.0059ms"  />
+            <link id="linkBroker2Fog2" bandwidth="125MBps" latency="0.0059ms"  />
+            <link id="linkBroker3Fog3" bandwidth="125MBps" latency="0.0059ms"  />
 
             <zoneRoute src="edge0" dst="broker0" gw_src="edge0_gtw" gw_dst="broker0_gtw">
               <link_ctn id="linkEdge0Broker0"/>
             </zoneRoute>
+            <zoneRoute src="edge0" dst="broker1" gw_src="edge0_gtw" gw_dst="broker1_gtw">
+              <link_ctn id="linkEdge0Broker1"/>
+            </zoneRoute>
+            <zoneRoute src="edge0" dst="broker2" gw_src="edge0_gtw" gw_dst="broker2_gtw">
+              <link_ctn id="linkEdge0Broker2"/>
+            </zoneRoute>
+            <zoneRoute src="edge0" dst="broker3" gw_src="edge0_gtw" gw_dst="broker3_gtw">
+              <link_ctn id="linkEdge0Broker3"/>
+            </zoneRoute>
+
+            <zoneRoute src="edge1" dst="broker0" gw_src="edge1_gtw" gw_dst="broker0_gtw">
+              <link_ctn id="linkEdge1Broker0"/>
+            </zoneRoute>
+            <zoneRoute src="edge1" dst="broker1" gw_src="edge1_gtw" gw_dst="broker1_gtw">
+              <link_ctn id="linkEdge1Broker1"/>
+            </zoneRoute>
+            <zoneRoute src="edge1" dst="broker2" gw_src="edge1_gtw" gw_dst="broker2_gtw">
+              <link_ctn id="linkEdge1Broker2"/>
+            </zoneRoute>
+            <zoneRoute src="edge1" dst="broker3" gw_src="edge1_gtw" gw_dst="broker3_gtw">
+              <link_ctn id="linkEdge1Broker3"/>
+            </zoneRoute>
+
+            <zoneRoute src="edge2" dst="broker0" gw_src="edge2_gtw" gw_dst="broker0_gtw">
+              <link_ctn id="linkEdge2Broker0"/>
+            </zoneRoute>
+            <zoneRoute src="edge2" dst="broker1" gw_src="edge2_gtw" gw_dst="broker1_gtw">
+              <link_ctn id="linkEdge2Broker1"/>
+            </zoneRoute>
+            <zoneRoute src="edge2" dst="broker2" gw_src="edge2_gtw" gw_dst="broker2_gtw">
+              <link_ctn id="linkEdge2Broker2"/>
+            </zoneRoute>
+            <zoneRoute src="edge2" dst="broker3" gw_src="edge2_gtw" gw_dst="broker3_gtw">
+              <link_ctn id="linkEdge2Broker3"/>
+            </zoneRoute>
+
+            <zoneRoute src="edge3" dst="broker0" gw_src="edge3_gtw" gw_dst="broker0_gtw">
+              <link_ctn id="linkEdge3Broker0"/>
+            </zoneRoute>
+            <zoneRoute src="edge3" dst="broker1" gw_src="edge3_gtw" gw_dst="broker1_gtw">
+              <link_ctn id="linkEdge3Broker1"/>
+            </zoneRoute>
+            <zoneRoute src="edge3" dst="broker2" gw_src="edge3_gtw" gw_dst="broker2_gtw">
+              <link_ctn id="linkEdge3Broker2"/>
+            </zoneRoute>
+            <zoneRoute src="edge3" dst="broker3" gw_src="edge3_gtw" gw_dst="broker3_gtw">
+              <link_ctn id="linkEdge3Broker3"/>
+            </zoneRoute>
 
             <zoneRoute src="broker0" dst="fog0" gw_src="broker0_gtw" gw_dst="fog0_gtw">
               <link_ctn id="linkBroker0Fog0"/>
+            </zoneRoute>
+            <zoneRoute src="broker1" dst="fog1" gw_src="broker1_gtw" gw_dst="fog1_gtw">
+              <link_ctn id="linkBroker1Fog1"/>
+            </zoneRoute>
+            <zoneRoute src="broker2" dst="fog2" gw_src="broker2_gtw" gw_dst="fog2_gtw">
+              <link_ctn id="linkBroker2Fog2"/>
+            </zoneRoute>
+            <zoneRoute src="broker3" dst="fog3" gw_src="broker3_gtw" gw_dst="fog3_gtw">
+              <link_ctn id="linkBroker3Fog3"/>
             </zoneRoute>
         </zone>
     </platform>

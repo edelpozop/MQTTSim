@@ -8,14 +8,22 @@
 #include <xbt/dict.h>
 #include <xbt/sysdep.h>
 
-#define MAX_PAYLOAD_SIZE (2 * 1024 * 1024) 
-#define TOTAL_EDGE 1
+#define MAX_PAYLOAD_SIZE (1024) 
+#define TOTAL_EDGE0 100
+#define TOTAL_EDGE1 100
+#define TOTAL_EDGE2 100
+#define TOTAL_EDGE3 100
+#define TOTAL_FOG0 1
+#define TOTAL_FOG1 1
+#define TOTAL_FOG2 1
+#define TOTAL_FOG3 1
+#define TOTAL_MESSAGES 10000
 
 // Definición de la estructura de envío de paquetes
 typedef struct {
 	int op;				//0-connect, 1-disconnect/end, 2-publish, 3-subscribe
 	int qos;
-	char mbox[128];
+	sg_mailbox_t mbox;
 	char topic[128];
 	char data[128];
 	int payloadlen;

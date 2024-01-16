@@ -61,75 +61,65 @@
 
 static void edge (int argc, char**argv)
 {
+	const char* edge_name 		= sg_host_get_name(sg_host_self());
+	const char* fname 			= sg_host_get_name(sg_host_self());
+	const char* value_broker	= sg_host_get_property_value(sg_host_self(), "mbox_broker");
+	const char* value_qos 		= sg_host_get_property_value(sg_host_self(), "qos");
+
+    sg_mailbox_t mbox_edge 		= sg_mailbox_by_name(sg_host_get_name(sg_host_self()));
+    sg_mailbox_t mbox_broker  	= sg_mailbox_by_name(value_broker);
+
+    printf("%p %s %p\n", sg_host_self(), sg_host_get_name(sg_host_self()), sg_mailbox_by_name(edge_name));
+
+	sg_actor_sleep_for(1);
 	double start_time;
     double end_time;
     double used_time;
     double avg_time;
     double us_rate;
 
-	const char* value_broker;
-	const char* value_qos;
-
-	const char* edge_name 		= sg_host_get_name(sg_host_self());
-	const char* fname 			= sg_host_get_name(sg_host_self());
-
-	value_broker 				= sg_host_get_property_value(sg_host_self(), "mbox_broker");
-	value_qos 					= sg_host_get_property_value(sg_host_self(), "qos");
-
-	sg_mailbox_t mbox_edge 		= sg_mailbox_by_name(edge_name);
-	sg_mailbox_t mbox_broker 	= sg_mailbox_by_name(value_broker);
-
 	int qos_edge = atoi(value_qos), ret = 0;
 
 	ret = mqtt_connect(qos_edge, mbox_edge, mbox_broker);
 
 	// Abrir el archivo CSV y escribir los encabezados
-    FILE *csv_file = fopen("MQTTSimgrid.csv", "w");
-    if (csv_file) {
-        fprintf(csv_file, "Data Size (B);Time Elapsed (s);Transfer Rate (MB/s)\n");
-    }
+    //FILE *csv_file = fopen("MQTTSimgrid.csv", "w");
+    //if (csv_file) {
+    //    fprintf(csv_file, "Data Size (B);Time Elapsed (s);Transfer Rate (MB/s)\n");
+    //}
 
-    int payload_size = 1;
-
-	while (payload_size <= MAX_PAYLOAD_SIZE) 
+	//char message[MAX_PAYLOAD_SIZE];
+    // Iniciar el reloj
+    avg_time = 0.0;
+    start_time = simgrid_get_clock();
+    
+    for (int repeat = 0; repeat < TOTAL_MESSAGES; repeat++) 
     {
-    	char message[payload_size];
-        // Iniciar el reloj
-        avg_time = 0.0;
-        start_time = simgrid_get_clock();
-        
-        for (int repeat = 0; repeat < REPEAT_COUNT; repeat++) 
-        {
-            // Publicar el mensaje
-            snprintf(message, payload_size, "%*s", payload_size, "Ping");
-            ret = mqtt_publish(qos_edge, mbox_edge, mbox_broker, MQTT_TOPIC, message, payload_size);
-        }
-
-        used_time = (simgrid_get_clock() - start_time);
-        avg_time = used_time;
-
-        avg_time = avg_time / (float) REPEAT_COUNT;
-
-        if (avg_time > 0) /* rate is megabytes per second */
-            us_rate = (double)((payload_size) / (avg_time * (double) 1000000));
-        else
-            us_rate = 0.0;
-
-        // Escribir los datos en el archivo CSV
-        if (csv_file) 
-        {
-            fprintf(csv_file, "%d;%.8f;%.8f\n", payload_size, avg_time, us_rate);
-            printf("%d\t\t%.8f\t\t%.8f\n", payload_size, avg_time, us_rate);
-        }
-
-        // Aumentar el tamaño del payload (duplicarlo) para la próxima iteración
-        payload_size *= 2;
+        // Publicar el mensaje
+        ret = mqtt_publish(qos_edge, mbox_edge, mbox_broker, MQTT_TOPIC, "Ping", MAX_PAYLOAD_SIZE);
     }
+    used_time = (simgrid_get_clock() - start_time);
 
-    if (csv_file) 
+    avg_time = used_time;
+
+    avg_time = avg_time / (float) 10;
+
+    if (avg_time > 0) /* rate is megabytes per second */
+        us_rate = (double)((MAX_PAYLOAD_SIZE) / (avg_time * (double) 1000000));
+    else
+        us_rate = 0.0;
+
+    // Escribir los datos en el archivo CSV
+    //if (csv_file) 
+    //{
+    //    fprintf(csv_file, "%d;%.8f;%.8f\n", payload_size, avg_time, us_rate);
+    printf("%d\t\t%.8f\t\t%.8f\n", MAX_PAYLOAD_SIZE, avg_time, us_rate);
+    //}
+
+    /*if (csv_file) 
     {
         fclose(csv_file);
-    }    
+    }   */ 
 
     //Broker disconnection
 
@@ -143,7 +133,7 @@ static void broker (int argc, char** argv)
 	sg_mailbox_t mbox_inb 			= sg_mailbox_by_name(broker_name);
 	int id_cluster_fog 				= atoi(sg_host_get_property_value(sg_host_self(), "id_cluster_fog"));
 	int nodes_fog 					= atoi(sg_host_get_property_value(sg_host_self(), "nodes_fog"));
-	int active_devices 				= TOTAL_EDGE;
+	int active_devices 				= TOTAL_EDGE0;
 
 	broker_run(mbox_inb, id_cluster_fog, nodes_fog, active_devices);
 }
@@ -151,19 +141,15 @@ static void broker (int argc, char** argv)
 
 static void fog (int argc, char** argv)
 {
-	const char* value_broker;
-	const char* value_qos;
-	const char* topic_subs;
-	const char* fog_name 		= sg_host_get_name(sg_host_self());
+	const char* fog_name 			= sg_host_get_name(sg_host_self());
+	const char* value_broker 		= sg_host_get_property_value(sg_host_self(), "mbox_broker");
+	const char* value_qos 			= sg_host_get_property_value(sg_host_self(), "qos");
+	const char* topic_subs 			= sg_host_get_property_value(sg_host_self(), "subscribe");
+	
 	int end = 0;
 
-	value_broker 				= sg_host_get_property_value(sg_host_self(), "mbox_broker");
-	
-	value_qos 					= sg_host_get_property_value(sg_host_self(), "qos");
-	topic_subs 					= sg_host_get_property_value(sg_host_self(), "subscribe");
-
-	sg_mailbox_t mbox_fog 		= sg_mailbox_by_name(fog_name);
-	sg_mailbox_t mbox_broker 	= sg_mailbox_by_name(value_broker);
+	sg_mailbox_t mbox_fog 			= sg_mailbox_by_name(fog_name);
+	sg_mailbox_t mbox_broker 		= sg_mailbox_by_name(value_broker);
 
 	int qos_fog = atoi(value_qos);
 	
@@ -192,7 +178,7 @@ static void fog (int argc, char** argv)
 			if(package.op == 1) end = 1;
 			else
 			{
-				printf("FOG\t%s\t%s\n", package.topic, package.data);
+				//printf("Mensaje recibido %s\n", sg_host_get_name(sg_host_self()));
 			}
 			
 		} 
@@ -217,18 +203,89 @@ int main(int argc, char* argv[])
 	sg_host_energy_plugin_init();
 
 	int broker_argc           = 0;
-	const char* broker_argv[] = {NULL};
-	sg_actor_create_("broker0", sg_host_by_name("broker-0-0"), broker, broker_argc, broker_argv);
+	const char* broker_argv0[] = {NULL};
+	sg_actor_create_("broker0", sg_host_by_name("broker-0-0"), broker, broker_argc, broker_argv0);
 
-	int fog_argc           = 0;
-	const char* fog_argv[] = {NULL};
-	sg_actor_create_("fog0", sg_host_by_name("fog-0-0"), fog, fog_argc, fog_argv);
+	const char* broker_argv1[] = {NULL};
+	sg_actor_create_("broker1", sg_host_by_name("broker-1-0"), broker, broker_argc, broker_argv1);
 
-	int edge_argc           = 0;
-	const char* edge_argv[] = {NULL};
-	sg_actor_create_("edge0", sg_host_by_name("edge-0-0"), edge, edge_argc, edge_argv);
+	const char* broker_argv2[] = {NULL};
+	sg_actor_create_("broker2", sg_host_by_name("broker-2-0"), broker, broker_argc, broker_argv2);
 
-	
+	const char* broker_argv3[] = {NULL};
+	sg_actor_create_("broker3", sg_host_by_name("broker-3-0"), broker, broker_argc, broker_argv3);
+
+	for(int i = 0; i < TOTAL_EDGE0; i++)
+	{
+		int edge_argc0           = 0;
+		char edge_name0 [128];
+		sprintf(edge_name0, "edge-0-%d", i);
+		const char* edge_argv0[] = {NULL};
+		sg_actor_create_("edge0", sg_host_by_name(edge_name0), edge, edge_argc0, edge_argv0);
+	}
+
+	for(int i = 0; i < TOTAL_EDGE1; i++)
+	{
+		int edge_argc1           = 0;
+		char edge_name1 [128];
+		sprintf(edge_name1, "edge-1-%d", i);
+		const char* edge_argv1[] = {NULL};
+		sg_actor_create_("edge1", sg_host_by_name(edge_name1), edge, edge_argc1, edge_argv1);
+	}
+
+	for(int i = 0; i < TOTAL_EDGE2; i++)
+	{
+		int edge_argc2           = 0;
+		char edge_name2 [128];
+		sprintf(edge_name2, "edge-2-%d", i);
+		const char* edge_argv2[] = {NULL};
+		sg_actor_create_("edge2", sg_host_by_name(edge_name2), edge, edge_argc2, edge_argv2);
+	}
+
+	for(int i = 0; i < TOTAL_EDGE3; i++)
+	{
+		int edge_argc3           = 0;
+		char edge_name3 [128];
+		sprintf(edge_name3, "edge-3-%d", i);
+		const char* edge_argv3[] = {NULL};
+		sg_actor_create_("edge3", sg_host_by_name(edge_name3), edge, edge_argc3, edge_argv3);
+	}
+
+	for(int i = 0; i < TOTAL_FOG0; i++)
+	{
+		int fog_argc0           = 0;
+		char fog_name0 [128];
+		sprintf(fog_name0, "fog-0-%d", i);
+		const char* fog_argv0[] = {NULL};
+		sg_actor_create_("fog0", sg_host_by_name(fog_name0), fog, fog_argc0, fog_argv0);
+	}
+
+	for(int i = 0; i < TOTAL_FOG1; i++)
+	{
+		int fog_argc1           = 0;
+		char fog_name1 [128];
+		sprintf(fog_name1, "fog-1-%d", i);
+		const char* fog_argv1[] = {NULL};
+		sg_actor_create_("fog1", sg_host_by_name(fog_name1), fog, fog_argc1, fog_argv1);
+	}
+
+	for(int i = 0; i < TOTAL_FOG2; i++)
+	{
+		int fog_argc2           = 0;
+		char fog_name2 [128];
+		sprintf(fog_name2, "fog-2-%d", i);
+		const char* fog_argv2[] = {NULL};
+		sg_actor_create_("fog2", sg_host_by_name(fog_name2), fog, fog_argc2, fog_argv2);
+	}
+
+	for(int i = 0; i < TOTAL_FOG3; i++)
+	{
+		int fog_argc3           = 0;
+		char fog_name3 [128];
+		sprintf(fog_name3, "fog-3-%d", i);
+		const char* fog_argv3[] = {NULL};
+		sg_actor_create_("fog3", sg_host_by_name(fog_name3), fog, fog_argc3, fog_argv3);
+	}
 
 	simgrid_register_function("broker", broker);
 	simgrid_register_function("fog", fog);

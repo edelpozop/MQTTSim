@@ -1,6 +1,6 @@
 BIN_FILES  =  main
 
-INSTALL_PATH = /opt/simgrid-3.34
+INSTALL_PATH = /opt/simgrid-3.35
 
 CC = gcc
 
