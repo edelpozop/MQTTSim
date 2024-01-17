@@ -5,7 +5,7 @@
 
 // Tamaño máximo (2MB)
 #define REPEAT_COUNT 100
-#define MQTT_TOPIC "pingpong"
+#define MQTT_TOPIC "/pingpong"
 
 /*static void edge (int argc, char**argv)
 {
@@ -189,7 +189,7 @@ static void fog (int argc, char** argv)
 			if(package.op == 1) end = 1;
 			else
 			{
-				//printf("Mensaje recibido %s\n", sg_host_get_name(sg_host_self()));
+				printf("Mensaje recibido %s\n", sg_host_get_name(sg_host_self()));
 			}
 			
 		} 

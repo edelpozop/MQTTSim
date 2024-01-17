@@ -1,5 +1,5 @@
 #include "mqtt_sim.h"
-#include "subscriptions.h"
+
 
 int mqtt_connect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 {
@@ -45,7 +45,7 @@ void mqtt_disconnect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 }
 
 
-void mqtt_disconnectAll_b(int id_cluster, int nodes_fog)
+void mqtt_disconnectAll_b (int id_cluster, int nodes_fog)
 {
 	char destEnd[128];
 	for (int i = 0; i < nodes_fog; i++)
@@ -61,7 +61,7 @@ void mqtt_disconnectAll_b(int id_cluster, int nodes_fog)
 }
 
 
-int mqtt_publish(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, char* payload, int payloadlen)
+int mqtt_publish (int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, char* payload, int payloadlen)
 {
 	MQTTPackage* payloadPublish 		= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	payloadPublish->op 					= 2;
@@ -82,26 +82,26 @@ int mqtt_publish(int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, c
 }
 
 
-void mqtt_publish_b (int qos, char* source, char* dest, char* topic, char* payload, int payloadlen)
+void mqtt_publish_b (int qos, sg_mailbox_t source, char* topic, char* payload, int payloadlen, Sub* subList)
 {
 	MQTTPackage* payloadBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	payloadBroker->op 					= 2;
 	payloadBroker->qos 					= qos;
 	payloadBroker->payloadlen 			= payloadlen;
 	payloadBroker->mbox 				= source;
-
-	sg_mailbox_t mbox_dest				= sg_mailbox_by_name(dest);
-	int sizeofStruct 					= (sizeof(int) * 3) + (sizeof(payloadBroker->mbox) + sizeof(payloadBroker->topic) + payloadlen);
-
 	sprintf(payloadBroker->topic,"%s", topic);
-	
-	// Buscar aquellos que se han suscrito para reenviarlo
-	
-	//sprintf(payloadBroker->data,"%s", payload);
+	int sizeofStruct 					= (sizeof(int) * 3) + (sizeof(payloadBroker->mbox) + sizeof(payloadBroker->topic) + payloadlen);
 	
 
-	
-    sg_mailbox_put (mbox_dest, payloadBroker, sizeofStruct/2);
+	int hitsMbox = 0;
+    sg_mailbox_t* dests = findSubs(subList, topic, &hitsMbox);
+
+    for (int i = 0; i < hitsMbox; i++) 
+    {
+        sg_mailbox_put (dests[i], payloadBroker, sizeofStruct/2);
+    }
+
+    free(dests);
 }
 
 
@@ -158,18 +158,18 @@ void broker_run (sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int activ
 
 			if(active_d == 0)
 			{
-				printList(&list);
+				printList(list);
 				mqtt_disconnectAll_b(id_cluster_fog, nodes_fog);
 				end = 1;
 			}
 			break;
+
 		case 2:	
-			for (int i = 0; i < nodes_f; i++)
-			{
-				sprintf(dest, "fog-%d-%d", id_cluster_f, i);
-				mqtt_publish_b(package.qos, package.mbox, dest, package.topic, package.data, package.payloadlen);
-			}
+
+			mqtt_publish_b(package.qos, package.mbox, package.topic, package.data, package.payloadlen, list);
+			
 			break;
+
 		case 3:
 			//printf("%s subscribed to %s\n", package.mbox, package.topic);
 
@@ -186,6 +186,7 @@ void broker_run (sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int activ
 		    strcpy(ack_broker,"Unsubscribed");
 			sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
 			break;
+
 		default:
 		}
 	}

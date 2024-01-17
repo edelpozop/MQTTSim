@@ -7,7 +7,7 @@
                 <prop id="wattage_off" value="10" />
                 <prop id="mbox_broker" value="broker-0-0" />        <!-- mbox_broker -   argv[0] -->
                 <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
-                <prop id="subscribe" value="/" />
+                <prop id="subscribe" value="/pingpong" />
             </cluster>
             <cluster bw="1000GBps" id="edge0" lat="0ms" prefix="edge-0-" suffix="" radical="0-100" core="6" speed="4Gf" router_id="edge0_gtw">
                 <prop id="wattage_per_state" value="1.0:1.2:2.0" />
@@ -27,7 +27,7 @@
                 <prop id="wattage_off" value="10" />
                 <prop id="mbox_broker" value="broker-1-0" />        <!-- mbox_broker -   argv[0] -->
                 <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
-                <prop id="subscribe" value="/" />
+                <prop id="subscribe" value="/aa" />
             </cluster>
             <cluster bw="1000GBps" id="edge1" lat="0ms" prefix="edge-1-" suffix="" radical="0-100" core="6" speed="4Gf" router_id="edge1_gtw">
                 <prop id="wattage_per_state" value="1.0:1.2:2.0" />
@@ -47,7 +47,7 @@
                 <prop id="wattage_off" value="10" />
                 <prop id="mbox_broker" value="broker-2-0" />        <!-- mbox_broker -   argv[0] -->
                 <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
-                <prop id="subscribe" value="/" />
+                <prop id="subscribe" value="/bb" />
             </cluster>
             <cluster bw="1000GBps" id="edge2" lat="0ms" prefix="edge-2-" suffix="" radical="0-100" core="6" speed="4Gf" router_id="edge2_gtw">
                 <prop id="wattage_per_state" value="1.0:1.2:2.0" />
@@ -67,7 +67,7 @@
                 <prop id="wattage_off" value="10" />
                 <prop id="mbox_broker" value="broker-3-0" />        <!-- mbox_broker -   argv[0] -->
                 <prop id="qos" value="0" />                         <!-- qos -           argv[1] -->
-                <prop id="subscribe" value="/" />
+                <prop id="subscribe" value="/pingpong" />
             </cluster>
             <cluster bw="1000GBps" id="edge3" lat="0ms" prefix="edge-3-" suffix="" radical="0-100" core="6" speed="4Gf" router_id="edge3_gtw">
                 <prop id="wattage_per_state" value="1.0:1.2:2.0" />

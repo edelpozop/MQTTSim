@@ -41,11 +41,13 @@ int insertSub(Sub** head, sg_mailbox_t mbox, const char* topic)
     {
         Sub* newSub = createSub(mbox, topic);
 
-        if (*head == NULL) {
+        if (*head == NULL) 
+        {
             *head = newSub;
         } else {
             Sub* current = *head;
-            while (current->next != NULL) {
+            while (current->next != NULL) 
+            {
                 current = current->next;
             }
             current->next = newSub;
@@ -87,7 +89,7 @@ void deleteSub(Sub** head, sg_mailbox_t mbox, const char* topic)
 }
 
 
-// Función para imprimir la lista
+// Funcion para imprimir la lista
 void printList(Sub* head) 
 {
     Sub* current = head;
@@ -98,39 +100,44 @@ void printList(Sub* head)
     }
 }
 
-/*
 
-
-// Función principal
-int main() 
+// Funcion para buscar mboxs por topic y devolver una lista de mboxs coincidentes
+sg_mailbox_t* findSubs(Sub* head, const char* topic, int* results) 
 {
-    Sub* lista = NULL;
-
-    // Insertar Subs en la lista
-    insertarSub(&lista, 42, "Hola");
-    insertarSub(&lista, 17, "Mundo");
-    insertarSub(&lista, 42, "Programación");
-    insertarSub(&lista, 10, "C");
-
-    // Imprimir la lista
-    printf("Lista original:\n");
-    imprimirLista(lista);
-
-    // Eliminar un Sub por el parámetro topic
-    const char* topicAEliminar = "Mundo";
-    eliminarSubPortopic(&lista, topicAEliminar);
-
-    // Imprimir la lista después de la eliminación
-    printf("\nLista después de eliminar el Sub con topic '%s':\n", topicAEliminar);
-    imprimirLista(lista);
-
-    // Liberar memoria al finalizar
-    Sub* current = lista;
-    while (current != NULL) {
-        Sub* next = current->next;
-        free(current);
-        current = next;
+    // Contar la cantidad de mboxs que coinciden
+    int hits = 0;
+    Sub* current = head;
+    while (current != NULL) 
+    {
+        if (strcmp(current->topic, topic) == 0) 
+        {
+            hits++;
+        }
+        current = current->next;
     }
 
-    return 0;
-}*/
+    // Crear un array dinámico para almacenar los mbox coincidentes
+    sg_mailbox_t* mboxHits = (int*) malloc(sizeof(int) * hits);
+    if (mboxHits == NULL) 
+    {
+        perror("Error al asignar memoria para el array de mbox coincidentes");
+        exit(EXIT_FAILURE);
+    }
+
+    // Almacenar los mboxs coincidentes en el array
+    current = head;
+    int index = 0;
+    while (current != NULL) 
+    {
+        if (strcmp(current->topic, topic) == 0) 
+        {
+            mboxHits[index] = current->mbox;
+            index++;
+        }
+        current = current->next;
+    }
+
+    // currentizar la cantidad de resultados y devolver el array
+    *results = hits;
+    return mboxHits;
+}
