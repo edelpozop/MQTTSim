@@ -108,7 +108,7 @@ static void edge (int argc, char**argv)
     //if (csv_file) 
     //{
     //    fprintf(csv_file, "%d;%.8f;%.8f\n", payload_size, avg_time, us_rate);
-    printf("%d\t\t%.8f\t\t%.8f\n", MAX_PAYLOAD_SIZE, avg_time, us_rate);
+    printf("%s\t%d\t\t%.8f\t\t%.8f\n", edge_name, MAX_PAYLOAD_SIZE, avg_time, us_rate);
     //}
 
     /*if (csv_file) 
@@ -133,28 +133,17 @@ static void broker (int argc, char** argv)
 	switch (id_cluster_fog)
 	{
 	case 0:
-		active_devices 				= TOTAL_EDGE0;
+		active_devices 				= TOTAL_EDGE0 + TOTAL_EDGE4;
 		break;
 	case 1:
-		active_devices 				= TOTAL_EDGE1;
+		active_devices 				= TOTAL_EDGE1 + TOTAL_EDGE5;
 		break;
 	case 2:
-		active_devices 				= TOTAL_EDGE2;
-		break;
-	case 3:
-		active_devices 				= TOTAL_EDGE3;
-		break;
-	case 4:
-		active_devices 				= TOTAL_EDGE4;
-		break;
-	case 5:
-		active_devices 				= TOTAL_EDGE5;
-		break;
-	case 6:
-		active_devices 				= TOTAL_EDGE6;
+		active_devices 				= TOTAL_EDGE2 + TOTAL_EDGE6;
 		break;
 	default:
-		active_devices 				= TOTAL_EDGE7;
+		active_devices 				= TOTAL_EDGE3 + TOTAL_EDGE7;
+		break;
 	}
 
 	broker_run(mbox_inb, id_cluster_fog, nodes_fog, active_devices);
@@ -193,12 +182,12 @@ static void fog (int argc, char** argv)
 	    if (retcode == SG_OK) 
 	    {
 			MQTTPackage package = *payload;
-			xbt_free(payload);
+			//xbt_free(payload);
 
 			if(package.op == 1) end = 1;
 			else
 			{
-				printf("Mensaje recibido %s\n", sg_host_get_name(sg_host_self()));
+				//printf("Mensaje recibido %s\n", sg_host_get_name(sg_host_self()));
 			}
 			
 		} 

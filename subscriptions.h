@@ -11,16 +11,25 @@ typedef struct Sub
     struct Sub* next;
 } Sub;
 
+// Lista enlazada
+typedef struct 
+{
+    Sub* head;
+} Subscriptions;
+
+typedef struct 
+{
+    sg_mailbox_t* mailboxes;
+    int count;
+} MailboxList;
 
 void init_subscriptions     ();
 void end_subscriptions      ();
-Sub* createSub              (sg_mailbox_t mbox, const char* topic);
-void deleteSub              (Sub** head, sg_mailbox_t mbox, const char* topic);
+//Sub* createSub              (sg_mailbox_t mbox, const char* topic);
+void deleteSub              (sg_mailbox_t mbox, const char* topic);
 int exists                  (Sub* head, sg_mailbox_t mbox, const char* topic) ;
-int insertSub               (Sub** head, sg_mailbox_t mbox, const char* topic);
-sg_mailbox_t* findSubs      (Sub* head, const char* topic, int* results);
+int insertSub               (sg_mailbox_t mbox, const char* topic);
+MailboxList findSubs        (const char* topic);
 sg_mailbox_t* findAllSubs   (const char* topic, int* results) ;
-void printLocalList         (Sub* head);
-void printGlobalList        ();
-void insertGlobalList       (Sub* head);
-void freeLocalList          (Sub* head);
+void printList              ();
+void freeList               ();

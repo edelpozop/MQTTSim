@@ -1,29 +1,24 @@
 #include "subscriptions.h"
 
 // Lista enlazada global
-Sub* globalSubs = NULL;
-pthread_mutex_t mutex;
+//pthread_mutex_t mutex;
+Subscriptions globalSubs;
 
 void init_subscriptions()
 {
-    if (pthread_mutex_init(&mutex, NULL) != 0) 
+    globalSubs.head = NULL;
+    /*if (pthread_mutex_init(&mutex, NULL) != 0) 
     {
         perror("Error mutex");
         exit(EXIT_FAILURE);
-    }
+    }*/
 }
 
 void end_subscriptions()
 {
     // Liberar memoria de la lista global y de las listas locales
-    Sub* currentList = globalSubs;
-    while (currentList != NULL) 
-    {
-        Sub* nextList = currentList->next;
-        freeLocalList(currentList);
-        currentList = nextList;
-    }
-    pthread_mutex_destroy(&mutex);
+    freeList();
+    //pthread_mutex_destroy(&mutex);
 }
 
 
@@ -62,50 +57,57 @@ int exists(Sub* head, sg_mailbox_t mbox, const char* topic)
 }
 
 
-int insertSub(Sub** head, sg_mailbox_t mbox, const char* topic)
+int insertSub(sg_mailbox_t mbox, const char* topic)
 {
-    if (!exists(*head, mbox, topic)) 
+    Sub* newSub = (Sub*) malloc(sizeof(Sub));
+    if (newSub == NULL) 
     {
-        Sub* newSub = createSub(mbox, topic);
-
-        if (*head == NULL) 
-        {
-            *head = newSub;
-        } else {
-            Sub* current = *head;
-            while (current->next != NULL) 
-            {
-                current = current->next;
-            }
-            current->next = newSub;
-        }
-        return 0;
+        perror("Error al asignar memoria para el nuevo nodo");
+        return 1;
     }
-    else return 1;
+
+    newSub->mbox = mbox;
+    strncpy(newSub->topic, topic, sizeof(newSub->topic) - 1);
+    newSub->topic[sizeof(newSub->topic) - 1] = '\0';  // Asegurar que el array de topic este terminado con '\0'
+    newSub->next = NULL;
+
+    if (globalSubs.head == NULL) 
+    {
+        globalSubs.head = newSub;
+    } 
+    else 
+    {
+        Sub* current = globalSubs.head;
+        while (current->next != NULL) 
+        {
+            current = current->next;
+        }
+        current->next = newSub;
+    }
+    return 0;
 }
 
 
 
-void deleteSub(Sub** head, sg_mailbox_t mbox, const char* topic) 
+void deleteSub(sg_mailbox_t mbox, const char* topic) 
 {
-    Sub* current = *head;
+    Sub* current = globalSubs.head;
     Sub* prev = NULL;
 
     while (current != NULL) 
     {
-        if (current->mbox == mbox && strcmp(current->topic, topic) == 0) 
+        if (strcmp(current->topic, topic) == 0 && memcmp(&current->mbox, &mbox, sizeof(sg_mailbox_t)) == 0) 
         {
             if (prev == NULL) 
             {
-                // El Sub a eliminar es el primero
-                *head = current->next;
-            } else 
+                globalSubs.head = current->next;
+            } 
+            else 
             {
-                // El Sub a eliminar no es el primero
                 prev->next = current->next;
             }
 
-            // Liberar memoria del Sub eliminado
+            free(current->topic);
             free(current);
             return;
         }
@@ -113,52 +115,39 @@ void deleteSub(Sub** head, sg_mailbox_t mbox, const char* topic)
         prev = current;
         current = current->next;
     }
+
 }
 
 
 // Funcion para buscar mboxs por topic y devolver una lista de mboxs coincidentes
-sg_mailbox_t* findSubs(Sub* head, const char* topic, int* results) 
+MailboxList findSubs(const char* topic) 
 {
-    // Contar la cantidad de mboxs que coinciden
-    int hits = 0;
-    Sub* current = head;
-    while (current != NULL) 
-    {
+    MailboxList result;
+    result.mailboxes = NULL;
+    result.count = 0;
+
+    Sub* current = globalSubs.head;
+
+    while (current != NULL) {
         if (strcmp(current->topic, topic) == 0) 
         {
-            hits++;
+            result.count++;
+            result.mailboxes = realloc(result.mailboxes, result.count * sizeof(sg_mailbox_t));
+            if (result.mailboxes == NULL) 
+            {
+                perror("Error al asignar memoria para la lista de mailboxes");
+                exit(EXIT_FAILURE);
+            }
+
+            result.mailboxes[result.count - 1] = current->mbox;
         }
         current = current->next;
     }
 
-    // Crear un array dinámico para almacenar los mbox coincidentes
-    sg_mailbox_t* mboxHits = (sg_mailbox_t*) malloc(sizeof(sg_mailbox_t) * hits);
-    if (mboxHits == NULL) 
-    {
-        perror("Error al asignar memoria para el array de mbox coincidentes");
-        exit(EXIT_FAILURE);
-    }
-
-    // Almacenar los mboxs coincidentes en el array
-    current = head;
-    int index = 0;
-    while (current != NULL) 
-    {
-        if (strcmp(current->topic, topic) == 0) 
-        {
-            mboxHits[index] = current->mbox;
-            index++;
-        }
-        current = current->next;
-    }
-
-    printf("%s %d\n", topic, hits);
-
-    *results = hits;
-    return mboxHits;
+    return result;
 }
 
-
+/*
 // Funcion para buscar mboxs por topic y devolver una lista de mboxs coincidentes
 sg_mailbox_t* findAllSubs(const char* topic, int* results) 
 {
@@ -206,63 +195,22 @@ sg_mailbox_t* findAllSubs(const char* topic, int* results)
     *results = resultsT;
     return totalMailbox;
 }
+*/
 
 
-// Función para insertar una lista local en la lista global
-void insertGlobalList(Sub* head) 
+
+void freeList() 
 {
-    pthread_mutex_lock(&mutex);
-    if (globalSubs == NULL) 
-    {
-        globalSubs = head;
-    } 
-    else 
-    {
-        Sub* current = globalSubs;
-        while (current->next != NULL) 
-        {
-            current = current->next;
-        }
-        current->next = head;
-    }
-    pthread_mutex_unlock(&mutex);
-}
+    Sub* current = globalSubs.head;
+    Sub* next;
 
-// Funcion para imprimir la lista
-void printLocalList(Sub* head) 
-{
-    Sub* current = head;
     while (current != NULL) 
     {
-        printf("mbox: %p, topic: %s\n", current->mbox, current->topic);
-        current = current->next;
-    }
-    printf("\n");
-}
-
-
-// Función para imprimir la lista global
-void printGlobalList() 
-{
-    pthread_mutex_lock(&mutex);
-    Sub* currentList = globalSubs;
-    while (currentList != NULL) 
-    {
-        printLocalList(currentList);
-        currentList = currentList->next;
-    }
-    pthread_mutex_unlock(&mutex);
-}
-
-
-// Función para liberar la memoria de una lista local
-void freeLocalList(Sub* head) 
-{
-    Sub* current = head;
-    while (current != NULL) 
-    {
-        Sub* next = current->next;
+        next = current->next;
+        //free(current->topic);
         free(current);
         current = next;
     }
+
+    globalSubs.head = NULL;
 }
