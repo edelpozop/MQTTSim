@@ -71,8 +71,6 @@ static void edge (int argc, char**argv)
     sg_mailbox_t mbox_edge 		= sg_mailbox_by_name(sg_host_get_name(sg_host_self()));
     sg_mailbox_t mbox_broker  	= sg_mailbox_by_name(value_broker);
 
-    printf("%p %s %p\n", sg_host_self(), sg_host_get_name(sg_host_self()), sg_mailbox_by_name(edge_name));
-
 	sg_actor_sleep_for(1);
 
 	int qos_edge = atoi(value_qos), ret = 0;
@@ -130,7 +128,6 @@ static void broker (int argc, char** argv)
 	sg_mailbox_t mbox_inb 			= sg_mailbox_by_name(broker_name);
 	int id_cluster_fog 				= atoi(sg_host_get_property_value(sg_host_self(), "id_cluster_fog"));
 	int nodes_fog 					= atoi(sg_host_get_property_value(sg_host_self(), "nodes_fog"));
-
 	int active_devices				= 0;
 
 	switch (id_cluster_fog)
@@ -144,8 +141,20 @@ static void broker (int argc, char** argv)
 	case 2:
 		active_devices 				= TOTAL_EDGE2;
 		break;
-	default:
+	case 3:
 		active_devices 				= TOTAL_EDGE3;
+		break;
+	case 4:
+		active_devices 				= TOTAL_EDGE4;
+		break;
+	case 5:
+		active_devices 				= TOTAL_EDGE5;
+		break;
+	case 6:
+		active_devices 				= TOTAL_EDGE6;
+		break;
+	default:
+		active_devices 				= TOTAL_EDGE7;
 	}
 
 	broker_run(mbox_inb, id_cluster_fog, nodes_fog, active_devices);
@@ -208,6 +217,7 @@ int main(int argc, char* argv[])
 {
 	/* Get the arguments */
 	simgrid_init(&argc, argv);
+	mqtt_init();
 
 	/* load the platform file */
 	simgrid_load_platform(argv[1]);
@@ -262,6 +272,42 @@ int main(int argc, char* argv[])
 		sg_actor_create_("edge3", sg_host_by_name(edge_name3), edge, edge_argc3, edge_argv3);
 	}
 
+	for(int i = 0; i < TOTAL_EDGE4; i++)
+	{
+		int edge_argc4           = 0;
+		char edge_name4 [128];
+		sprintf(edge_name4, "edge-4-%d", i);
+		const char* edge_argv4[] = {NULL};
+		sg_actor_create_("edge4", sg_host_by_name(edge_name4), edge, edge_argc4, edge_argv4);
+	}
+
+	for(int i = 0; i < TOTAL_EDGE5; i++)
+	{
+		int edge_argc5           = 0;
+		char edge_name5 [128];
+		sprintf(edge_name5, "edge-5-%d", i);
+		const char* edge_argv5[] = {NULL};
+		sg_actor_create_("edge1", sg_host_by_name(edge_name5), edge, edge_argc5, edge_argv5);
+	}
+
+	for(int i = 0; i < TOTAL_EDGE6; i++)
+	{
+		int edge_argc6           = 0;
+		char edge_name6 [128];
+		sprintf(edge_name6, "edge-6-%d", i);
+		const char* edge_argv6[] = {NULL};
+		sg_actor_create_("edge6", sg_host_by_name(edge_name6), edge, edge_argc6, edge_argv6);
+	}
+
+	for(int i = 0; i < TOTAL_EDGE7; i++)
+	{
+		int edge_argc7           = 0;
+		char edge_name7 [128];
+		sprintf(edge_name7, "edge-7-%d", i);
+		const char* edge_argv7[] = {NULL};
+		sg_actor_create_("edge7", sg_host_by_name(edge_name7), edge, edge_argc7, edge_argv7);
+	}
+
 	for(int i = 0; i < TOTAL_FOG0; i++)
 	{
 		int fog_argc0           = 0;
@@ -304,6 +350,7 @@ int main(int argc, char* argv[])
 	
 	simgrid_run();
 	printf("Simulation time %g\n", simgrid_get_clock());
+	mqtt_end();
 
 	return 0;
 }

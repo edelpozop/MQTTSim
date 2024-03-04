@@ -1,5 +1,16 @@
 #include "mqtt_sim.h"
+#include "subscriptions.h"
 
+
+void mqtt_init()
+{
+	init_subscriptions();
+}
+
+void mqtt_end()
+{
+	end_subscriptions();
+}
 
 int mqtt_connect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 {
@@ -40,7 +51,7 @@ void mqtt_disconnect(int qos, sg_mailbox_t source, sg_mailbox_t dest)
 		printf("Error in %s\n", sg_host_get_name(sg_host_self()));
 		return 1;
 	}
-	//printf("%s disconnected\n", sg_host_get_name(sg_host_self()));
+	printf("%s disconnected\n", sg_host_get_name(sg_host_self()));
 	return 0;
 }
 
@@ -82,7 +93,7 @@ int mqtt_publish (int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic, 
 }
 
 
-void mqtt_publish_b (int qos, sg_mailbox_t source, char* topic, char* payload, int payloadlen, Sub* subList)
+void mqtt_publish_b (int qos, sg_mailbox_t source, char* topic, char* payload, int payloadlen)
 {
 	MQTTPackage* payloadBroker 			= (MQTTPackage*) xbt_malloc(sizeof(MQTTPackage));
 	payloadBroker->op 					= 2;
@@ -91,17 +102,16 @@ void mqtt_publish_b (int qos, sg_mailbox_t source, char* topic, char* payload, i
 	payloadBroker->mbox 				= source;
 	sprintf(payloadBroker->topic,"%s", topic);
 	int sizeofStruct 					= (sizeof(int) * 3) + (sizeof(payloadBroker->mbox) + sizeof(payloadBroker->topic) + payloadlen);
-	
 
-	int hitsMbox = 0;
-    sg_mailbox_t* dests = findSubs(subList, topic, &hitsMbox);
-
+    int hitsMbox = 0;
+    sg_mailbox_t* dests = findAllSubs(topic, &hitsMbox);
+    printf("%d\n",hitsMbox);
     for (int i = 0; i < hitsMbox; i++) 
     {
         sg_mailbox_put (dests[i], payloadBroker, sizeofStruct/2);
     }
-
     free(dests);
+    
 }
 
 
@@ -128,14 +138,14 @@ int mqtt_subscribe (int qos, sg_mailbox_t source, sg_mailbox_t dest, char* topic
 
 void broker_run (sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int active_devices)
 {
-	sg_mailbox_t mbroker 				= mbox;
+	char ack_broker[128];
+	Sub* localList 						= NULL;
+	int listAdded 						= 0;
 	int id_cluster_f 					= id_cluster_fog;
 	int nodes_f 						= nodes_fog;
 	int active_d 						= active_devices;
 	int end 							= 0;
-
-	char ack_broker[128], destEnd[128], dest[128];
-	Sub* list 							= NULL;
+	sg_mailbox_t mbroker 				= mbox;
 	
 	while(!end)
 	{
@@ -158,31 +168,35 @@ void broker_run (sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int activ
 
 			if(active_d == 0)
 			{
-				printList(list);
+				//printLocalList(localList);
 				mqtt_disconnectAll_b(id_cluster_fog, nodes_fog);
 				end = 1;
 			}
 			break;
 
 		case 2:	
-
-			mqtt_publish_b(package.qos, package.mbox, package.topic, package.data, package.payloadlen, list);
-			
+			mqtt_publish_b(package.qos, package.mbox, package.topic, package.data, package.payloadlen);
 			break;
 
 		case 3:
 			//printf("%s subscribed to %s\n", package.mbox, package.topic);
 
-			if(insertSub(&list, package.mbox, package.topic) == 0)
+			if(insertSub(&localList, package.mbox, package.topic) == 0)
 			{
 				strcpy(ack_broker,"Subscribed");
 				sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
 			}
 
+			if (listAdded == 0) 
+			{	
+				insertGlobalList(localList);
+				printGlobalList();
+				listAdded = 1;
+			}
 			break;
 
 		case 4:
-		    deleteSub(&list, package.mbox, package.topic);
+		    deleteSub(&localList, package.mbox, package.topic);
 		    strcpy(ack_broker,"Unsubscribed");
 			sg_mailbox_put(package.mbox, xbt_strdup(ack_broker), strlen(ack_broker));
 			break;
@@ -190,15 +204,6 @@ void broker_run (sg_mailbox_t mbox, int id_cluster_fog, int nodes_fog, int activ
 		default:
 		}
 	}
-	
-	// Liberar memoria al finalizar
-    Sub* current = list;
-    while (current != NULL) 
-    {
-        Sub* next = current->next;
-        free(current);
-        current = next;
-    }
 
 	printf("Broker disconnected\n");
 }

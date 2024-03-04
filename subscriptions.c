@@ -1,5 +1,31 @@
 #include "subscriptions.h"
 
+// Lista enlazada global
+Sub* globalSubs = NULL;
+pthread_mutex_t mutex;
+
+void init_subscriptions()
+{
+    if (pthread_mutex_init(&mutex, NULL) != 0) 
+    {
+        perror("Error mutex");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void end_subscriptions()
+{
+    // Liberar memoria de la lista global y de las listas locales
+    Sub* currentList = globalSubs;
+    while (currentList != NULL) 
+    {
+        Sub* nextList = currentList->next;
+        freeLocalList(currentList);
+        currentList = nextList;
+    }
+    pthread_mutex_destroy(&mutex);
+}
+
 
 // Función para crear un nuevo Sub
 Sub* createSub(sg_mailbox_t mbox, const char* topic)
@@ -18,6 +44,7 @@ Sub* createSub(sg_mailbox_t mbox, const char* topic)
 
     return newSub;
 }
+
 
 
 int exists(Sub* head, sg_mailbox_t mbox, const char* topic) 
@@ -89,18 +116,6 @@ void deleteSub(Sub** head, sg_mailbox_t mbox, const char* topic)
 }
 
 
-// Funcion para imprimir la lista
-void printList(Sub* head) 
-{
-    Sub* current = head;
-    while (current != NULL) 
-    {
-        printf("mbox: %p, topic: %s\n", current->mbox, current->topic);
-        current = current->next;
-    }
-}
-
-
 // Funcion para buscar mboxs por topic y devolver una lista de mboxs coincidentes
 sg_mailbox_t* findSubs(Sub* head, const char* topic, int* results) 
 {
@@ -117,7 +132,7 @@ sg_mailbox_t* findSubs(Sub* head, const char* topic, int* results)
     }
 
     // Crear un array dinámico para almacenar los mbox coincidentes
-    sg_mailbox_t* mboxHits = (int*) malloc(sizeof(int) * hits);
+    sg_mailbox_t* mboxHits = (sg_mailbox_t*) malloc(sizeof(sg_mailbox_t) * hits);
     if (mboxHits == NULL) 
     {
         perror("Error al asignar memoria para el array de mbox coincidentes");
@@ -137,7 +152,117 @@ sg_mailbox_t* findSubs(Sub* head, const char* topic, int* results)
         current = current->next;
     }
 
-    // currentizar la cantidad de resultados y devolver el array
+    printf("%s %d\n", topic, hits);
+
     *results = hits;
     return mboxHits;
+}
+
+
+// Funcion para buscar mboxs por topic y devolver una lista de mboxs coincidentes
+sg_mailbox_t* findAllSubs(const char* topic, int* results) 
+{
+    pthread_mutex_lock(&mutex);  // Bloquear el mutex antes de acceder a la lista global
+
+    // Contar la cantidad de enteros que coinciden
+    int resultsT = 0;
+    Sub* currentList = globalSubs;
+    while (currentList != NULL) 
+    {
+        int localResult = 0;
+        sg_mailbox_t* mailboxHitLocal = findSubs(currentList, topic, &localResult);
+        resultsT += localResult;
+        free(mailboxHitLocal);
+        currentList = currentList->next;
+    }
+
+    // Crear un array dinámico para almacenar los enteros coincidentes
+    sg_mailbox_t* totalMailbox = (sg_mailbox_t*) malloc(sizeof(sg_mailbox_t) * resultsT);
+    if (totalMailbox == NULL) 
+    {
+        perror("Error al asignar memoria para el array de enteros coincidentes");
+        exit(EXIT_FAILURE);
+    }
+
+    // Almacenar los enteros coincidentes en el array
+    int index = 0;
+    currentList = globalSubs;
+    while (currentList != NULL) 
+    {
+        int localResult = 0;
+        sg_mailbox_t* mailboxHitLocal = findSubs(currentList, topic, &localResult);
+        for (int i = 0; i < localResult; i++) 
+        {
+            totalMailbox[index] = mailboxHitLocal[i];
+            index++;
+        }
+        free(mailboxHitLocal);
+        currentList = currentList->next;
+    }
+
+    pthread_mutex_unlock(&mutex);  // Desbloquear el mutex después de acceder a la lista global
+
+    // Actualizar la cantidad de resultados y devolver el array
+    *results = resultsT;
+    return totalMailbox;
+}
+
+
+// Función para insertar una lista local en la lista global
+void insertGlobalList(Sub* head) 
+{
+    pthread_mutex_lock(&mutex);
+    if (globalSubs == NULL) 
+    {
+        globalSubs = head;
+    } 
+    else 
+    {
+        Sub* current = globalSubs;
+        while (current->next != NULL) 
+        {
+            current = current->next;
+        }
+        current->next = head;
+    }
+    pthread_mutex_unlock(&mutex);
+}
+
+// Funcion para imprimir la lista
+void printLocalList(Sub* head) 
+{
+    Sub* current = head;
+    while (current != NULL) 
+    {
+        printf("mbox: %p, topic: %s\n", current->mbox, current->topic);
+        current = current->next;
+    }
+    printf("\n");
+}
+
+
+// Función para imprimir la lista global
+void printGlobalList() 
+{
+    pthread_mutex_lock(&mutex);
+    Sub* currentList = globalSubs;
+    while (currentList != NULL) 
+    {
+        printLocalList(currentList);
+        currentList = currentList->next;
+    }
+    pthread_mutex_unlock(&mutex);
+}
+
+
+// Función para liberar la memoria de una lista local
+void freeLocalList(Sub* head) 
+{
+    Sub* current = head;
+    while (current != NULL) 
+    {
+        Sub* next = current->next;
+        free(current);
+        current = next;
+    }
 }
